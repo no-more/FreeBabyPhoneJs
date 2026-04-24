@@ -262,6 +262,8 @@
 					<option value="1">1 QR code (auto)</option>
 					<option value="3">3 QR codes</option>
 					<option value="4">4 QR codes</option>
+					<option value="5">5 QR codes</option>
+					<option value="6">6 QR codes</option>
 				</select>
 			</label>
 			<small style="color: #666; display: block; margin-top: 4px;">
@@ -298,6 +300,8 @@
 					<option value="1">1 QR code (auto)</option>
 					<option value="3">3 QR codes</option>
 					<option value="4">4 QR codes</option>
+					<option value="5">5 QR codes</option>
+					<option value="6">6 QR codes</option>
 				</select>
 			</label>
 			<small style="color: #666; display: block; margin-top: 4px;">
@@ -448,8 +452,8 @@
 			const el = document.getElementById(id);
 			el.style.display = "block";
 			setTimeout(() => {
-				el.scrollIntoView({ behavior: "smooth", block: "center" });
-			}, 200);
+				el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+			}, 400);
 		}
 		function hide(id) { document.getElementById(id).style.display = "none"; }
 		function setStatus(msg) { statusDiv.textContent = "Statut : " + msg; }
@@ -1188,7 +1192,7 @@
 				html5QrCodeAnswer = new Html5Qrcode("readerAnswer");
 				await html5QrCodeAnswer.start(
 					{ facingMode: "environment" },
-					{ fps: 15, qrbox: { width: 1024, height: 1024 } },
+					{ fps: 15, qrbox: { width: 350, height: 350 } },
 					async (decodedText) => {
 						// Check if this is a partial QR code
 						if (isPartialQr(decodedText)) {
