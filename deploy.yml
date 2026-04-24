@@ -36,8 +36,8 @@ jobs:
 
       - name: Inject version info
         run: |
-          sed -i "s|--COMMIT_HASH--|${{ steps.git-info.outputs.commit_sha }}|g" babyphone.html
-          sed -i "s|--DEPLOY_DATE--|${{ steps.git-info.outputs.commit_date }}|g" babyphone.html
+          sed -i "s|--COMMIT_HASH--|${{ steps.git-info.outputs.commit_sha }}|g" index.html
+          sed -i "s|--DEPLOY_DATE--|${{ steps.git-info.outputs.commit_date }}|g" index.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
