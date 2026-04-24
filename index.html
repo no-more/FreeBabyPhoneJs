@@ -108,6 +108,7 @@
 			border: 6px solid white;
 			border-radius: 8px;
 			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+			margin: 15px;
 		}
 
 		#answerInput {
@@ -177,12 +178,12 @@
 		}
 
 		#reader {
-			width: 380px;
+			width: 550px;
 			margin: 10px auto;
 		}
 
 		#readerAnswer {
-			width: 380px;
+			width: 550px;
 			margin: 10px auto;
 		}
 
@@ -647,7 +648,7 @@
 				html5QrCodeOffer = new Html5Qrcode("reader");
 				await html5QrCodeOffer.start(
 					{ facingMode: "environment" },
-					{ fps: 10, qrbox: { width: 500, height: 500 } },
+					{ fps: 10, qrbox: { width: 600, height: 600 } },
 					async (decodedText) => {
 						console.log("QR scanné:", decodedText);
 						const pageUrl = location.href.split("#")[0];
@@ -704,7 +705,7 @@
 				html5QrCodeAnswer = new Html5Qrcode("readerAnswer");
 				await html5QrCodeAnswer.start(
 					{ facingMode: "environment" },
-					{ fps: 10, qrbox: { width: 500, height: 500 } },
+					{ fps: 10, qrbox: { width: 600, height: 600 } },
 					async (decodedText) => {
 						await stopScanAnswer();
 						document.getElementById("answerInput").value = decodedText;
