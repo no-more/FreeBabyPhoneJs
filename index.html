@@ -1086,7 +1086,7 @@
 				html5QrCodeOffer = new Html5Qrcode("reader");
 				await html5QrCodeOffer.start(
 					{ facingMode: "environment" },
-					{ fps: 15, qrbox: { width: 1024, height: 1024 } },
+					{ fps: 15, qrbox: { width: 500, height: 500 } },
 					async (decodedText) => {
 						console.log("QR scanné:", decodedText);
 						const pageUrl = location.href.split("#")[0];
