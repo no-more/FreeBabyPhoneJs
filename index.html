@@ -466,7 +466,7 @@
 		function makeQr(containerId, url) {
 			const el = document.getElementById(containerId);
 			el.innerHTML = "";
-			new QRCode(el, { text: url, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.L });
+			new QRCode(el, { text: url, width: 400, height: 400, correctLevel: QRCode.CorrectLevel.L });
 		}
 
 		function shareOrCopy(url, label) {
@@ -647,7 +647,7 @@
 				html5QrCodeOffer = new Html5Qrcode("reader");
 				await html5QrCodeOffer.start(
 					{ facingMode: "environment" },
-					{ fps: 10, qrbox: { width: 350, height: 350 } },
+					{ fps: 10, qrbox: { width: 500, height: 500 } },
 					async (decodedText) => {
 						console.log("QR scanné:", decodedText);
 						const pageUrl = location.href.split("#")[0];
@@ -704,7 +704,7 @@
 				html5QrCodeAnswer = new Html5Qrcode("readerAnswer");
 				await html5QrCodeAnswer.start(
 					{ facingMode: "environment" },
-					{ fps: 10, qrbox: { width: 350, height: 350 } },
+					{ fps: 10, qrbox: { width: 500, height: 500 } },
 					async (decodedText) => {
 						await stopScanAnswer();
 						document.getElementById("answerInput").value = decodedText;
