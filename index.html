@@ -284,6 +284,13 @@
 		<div id="pageQr"></div>
 	</div>
 
+	<div id="versionInfo" style="margin: 20px auto 0; max-width: 500px; padding-top: 16px; border-top: 1px solid #ddd;">
+		<p style="font-size: 0.75em; color: #999; margin: 0;">
+			Version: <span id="commitHash">--COMMIT_HASH--</span><br>
+			Déployé: <span id="deployDate">--DEPLOY_DATE--</span>
+		</p>
+	</div>
+
 	<script>
 		let localStream;
 		let peerConnection;
@@ -600,9 +607,9 @@
 				await peerConnection.setLocalDescription(answer);
 				await waitForIceGathering(peerConnection);
 
-				const answerUrl = await sdpToUrl(peerConnection.localDescription);
-				makeQr("answerQr", answerUrl);
-				document.getElementById("shareAnswerBtn").onclick = () => shareOrCopy(answerUrl, "Réponse babyphone");
+				const compressedAnswer = await compress(JSON.stringify(peerConnection.localDescription));
+				makeQr("answerQr", compressedAnswer);
+				document.getElementById("shareAnswerBtn").onclick = () => shareOrCopy(compressedAnswer, "Réponse babyphone");
 				show("answerSection");
 				setStatus("QR code prêt — faites-le scanner par l'Émetteur.");
 				setError("");
@@ -615,8 +622,16 @@
 			const raw = document.getElementById("answerInput").value.trim();
 			if (!raw) { setError("Veuillez coller la réponse."); return; }
 			try {
+				let answer;
 				const fromUrl = await sdpFromUrl(raw);
-				const answer = fromUrl || JSON.parse(raw);
+				if (fromUrl) {
+					answer = fromUrl;
+				} else if (raw.includes('{')) {
+					answer = JSON.parse(raw);
+				} else {
+					const json = await decompress(raw);
+					answer = JSON.parse(json);
+				}
 				await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
 				hide("pasteAnswerSection");
 				setStatus("Connexion en cours… En attente de l'audio.");
