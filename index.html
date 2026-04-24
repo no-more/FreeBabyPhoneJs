@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<title>Babyphone WebRTC</title>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+	<style>
+		* {
+			box-sizing: border-box;
+		}
+
+		body {
+			font-family: Arial, sans-serif;
+			text-align: center;
+			padding: 16px;
+			background: #f0f0f0;
+			margin: 0;
+		}
+
+		h1 {
+			font-size: 1.4em;
+			margin-bottom: 8px;
+		}
+
+		p {
+			font-size: 0.9em;
+			color: #555;
+			margin: 0 0 12px;
+		}
+
+		button {
+			padding: 14px 24px;
+			font-size: 16px;
+			margin: 6px;
+			cursor: pointer;
+			border: none;
+			border-radius: 8px;
+			background: #2196F3;
+			color: white;
+			min-width: 140px;
+			touch-action: manipulation;
+		}
+
+		button:disabled {
+			background: #aaa;
+			cursor: default;
+		}
+
+		button#stopBtn {
+			background: #e53935;
+		}
+
+		#status {
+			margin: 14px auto;
+			font-weight: bold;
+			font-size: 1em;
+			max-width: 500px;
+		}
+
+		#error {
+			color: #e53935;
+			margin: 8px;
+			font-size: 0.9em;
+		}
+
+		select {
+			padding: 10px;
+			margin: 8px;
+			font-size: 15px;
+			width: 90%;
+			max-width: 360px;
+			border-radius: 6px;
+			border: 1px solid #ccc;
+		}
+
+		.sdp-section {
+			display: none;
+			margin: 10px auto;
+			max-width: 500px;
+			text-align: left;
+		}
+
+		.sdp-section button {
+			width: 100%;
+			margin: 6px 0 0;
+		}
+
+		.step-hint {
+			background: #fff9c4;
+			border-left: 4px solid #f9a825;
+			padding: 8px 12px;
+			margin-bottom: 8px;
+			font-size: 0.85em;
+			border-radius: 0 6px 6px 0;
+		}
+
+		.qr-container {
+			display: flex;
+			justify-content: center;
+			margin: 10px auto;
+		}
+
+		.qr-container canvas,
+		.qr-container img {
+			border: 6px solid white;
+			border-radius: 8px;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+		}
+
+		#answerInput {
+			width: 100%;
+			height: 80px;
+			font-size: 13px;
+			font-family: monospace;
+			border-radius: 6px;
+			border: 1px solid #ccc;
+			padding: 6px;
+		}
+
+		#httpsWarning {
+			display: none;
+			background: #ffebee;
+			border-left: 4px solid #e53935;
+			padding: 10px 14px;
+			margin: 10px auto;
+			max-width: 500px;
+			text-align: left;
+			font-size: 0.85em;
+			border-radius: 0 6px 6px 0;
+		}
+
+		#vuMeter {
+			display: none;
+			margin: 8px auto;
+			width: 240px;
+			height: 14px;
+			background: #ddd;
+			border-radius: 7px;
+			overflow: hidden;
+		}
+
+		#vuBar {
+			height: 100%;
+			width: 0%;
+			background: #4CAF50;
+			border-radius: 7px;
+			transition: width 0.1s;
+		}
+	</style>
+</head>
+
+<body>
+	<h1> Babyphone WebRTC</h1>
+	<p>Ouvrez ce fichier dans Chrome sur les deux appareils.</p>
+
+	<div id="httpsWarning">
+		⛔ <strong>Microphonie bloquée :</strong> Chrome exige <strong>HTTPS</strong> pour accéder au micro.<br>
+		Ce fichier est ouvert en <code>file://</code> — cela ne fonctionne pas sur mobile.<br><br>
+		<strong>Solution rapide :</strong> hébergez ce fichier sur un serveur HTTPS :<br>
+		• <a href="https://app.netlify.com/drop" target="_blank">app.netlify.com/drop</a> (glisser-déposer, gratuit)<br>
+		• Ou sur votre PC : <code>npx serve .</code>
+	</div>
+
+	<div>
+		<label for="role"><strong>Rôle :</strong></label><br>
+		<select id="role">
+			<option value="emetteur"> Émetteur (chambre de bébé)</option>
+			<option value="recepteur"> Récepteur (votre téléphone)</option>
+		</select>
+	</div>
+
+	<div>
+		<button id="startBtn">Démarrer</button>
+		<button id="stopBtn" disabled>Arrêter</button>
+	</div>
+
+	<div id="status">Statut : Prêt</div>
+	<div id="error"></div>
+	<div id="vuMeter">
+		<div id="vuBar"></div>
+	</div>
+
+	<!-- Étape 1 (Émetteur) : QR code de l'offre -->
+	<div class="sdp-section" id="offerSection">
+		<div class="step-hint"> <strong>Étape 1 (Émetteur) :</strong> Faites scanner ce QR code par le Récepteur.</div>
+		<div class="qr-container" id="offerQr"></div>
+		<button id="shareOfferBtn"> Partager le lien (alt.)</button>
+	</div>
+
+	<!-- Étape 2 (Récepteur) : QR code de la réponse -->
+	<div class="sdp-section" id="answerSection">
+		<div class="step-hint"> <strong>Étape 2 (Récepteur) :</strong> Faites scanner ce QR code par l'Émetteur.</div>
+		<div class="qr-container" id="answerQr"></div>
+		<button id="shareAnswerBtn"> Partager le lien (alt.)</button>
+	</div>
+
+	<!-- Étape 3 (Émetteur) : coller la réponse -->
+	<div class="sdp-section" id="pasteAnswerSection">
+		<div class="step-hint"> <strong>Étape 3 (Émetteur) :</strong> Scannez le QR du Récepteur avec l'appareil photo,
+			puis collez le lien ici.</div>
+		<textarea id="answerInput" placeholder="Collez ici le lien scanné…"></textarea>
+		<button id="processAnswerBtn"> Connecter</button>
+	</div>
+
+	<audio id="remoteAudio" autoplay playsinline style="display:none"></audio>
+
+	<script>
+		let localStream;
+		let peerConnection;
+		let isEmetteur = true;
+		let isStarted = false;
+		let wakeLock = null;
+		let silentAudioCtx = null;
+		let vuAnimFrame = null;
+		let playBtnInserted = false;
+
+		const configuration = {
+			iceServers: [
+				{ urls: "stun:stun.l.google.com:19302" },
+				{ urls: "stun:stun1.l.google.com:19302" }
+			]
+		};
+
+		if (location.protocol === "file:") {
+			document.getElementById("httpsWarning").style.display = "block";
+		}
+
+		const startBtn = document.getElementById("startBtn");
+		const stopBtn = document.getElementById("stopBtn");
+		const statusDiv = document.getElementById("status");
+		const errorDiv = document.getElementById("error");
+		const roleSelect = document.getElementById("role");
+		const remoteAudio = document.getElementById("remoteAudio");
+
+		roleSelect.addEventListener("change", () => {
+			isEmetteur = roleSelect.value === "emetteur";
+		});
+
+		startBtn.addEventListener("click", startBabyphone);
+		stopBtn.addEventListener("click", stopBabyphone);
+		document.getElementById("processAnswerBtn").addEventListener("click", processAnswer);
+
+		// Auto-start récepteur si l'URL contient déjà une offre
+		if (location.hash.includes("sdp=")) {
+			roleSelect.value = "recepteur";
+			isEmetteur = false;
+			window.addEventListener("load", () => startBabyphone(), { once: true });
+		}
+
+		function show(id) { document.getElementById(id).style.display = "block"; }
+		function hide(id) { document.getElementById(id).style.display = "none"; }
+		function setStatus(msg) { statusDiv.textContent = "Statut : " + msg; }
+		function setError(msg) { errorDiv.textContent = msg ? "⚠️ " + msg : ""; }
+
+		async function requestWakeLock() {
+			if ("wakeLock" in navigator) {
+				try {
+					wakeLock = await navigator.wakeLock.request("screen");
+					wakeLock.addEventListener("release", async () => {
+						if (isStarted) wakeLock = await navigator.wakeLock.request("screen").catch(() => null);
+					});
+				} catch (e) { }
+			}
+		}
+
+		function startSilentAudio() {
+			try {
+				silentAudioCtx = new AudioContext();
+				const oscillator = silentAudioCtx.createOscillator();
+				const gain = silentAudioCtx.createGain();
+				gain.gain.value = 0.001;
+				oscillator.connect(gain);
+				gain.connect(silentAudioCtx.destination);
+				oscillator.start();
+			} catch (e) { }
+		}
+
+		function stopSilentAudio() {
+			if (silentAudioCtx) { silentAudioCtx.close().catch(() => { }); silentAudioCtx = null; }
+		}
+
+		function startVuMeter(stream) {
+			const ctx = new AudioContext();
+			const src = ctx.createMediaStreamSource(stream);
+			const analyser = ctx.createAnalyser();
+			analyser.fftSize = 256;
+			src.connect(analyser);
+			const data = new Uint8Array(analyser.frequencyBinCount);
+			const bar = document.getElementById("vuBar");
+			document.getElementById("vuMeter").style.display = "block";
+			function tick() {
+				analyser.getByteFrequencyData(data);
+				const avg = data.reduce((s, v) => s + v, 0) / data.length;
+				bar.style.width = Math.min(100, avg * 2.5) + "%";
+				bar.style.background = avg > 30 ? "#f9a825" : "#4CAF50";
+				vuAnimFrame = requestAnimationFrame(tick);
+			}
+			tick();
+		}
+
+		function stopVuMeter() {
+			if (vuAnimFrame) { cancelAnimationFrame(vuAnimFrame); vuAnimFrame = null; }
+			document.getElementById("vuMeter").style.display = "none";
+		}
+
+		async function compress(str) {
+			const enc = new TextEncoder().encode(str);
+			const cs = new CompressionStream("deflate-raw");
+			const writer = cs.writable.getWriter();
+			writer.write(enc); writer.close();
+			const buf = await new Response(cs.readable).arrayBuffer();
+			const bytes = new Uint8Array(buf);
+			let b64 = "";
+			for (let i = 0; i < bytes.length; i++) { b64 += String.fromCharCode(bytes[i]); }
+			return btoa(b64).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
+		}
+
+		async function decompress(b64) {
+			const bin = atob(b64.replace(/-/g, "+").replace(/_/g, "/"));
+			const buf = new Uint8Array(bin.length);
+			for (let i = 0; i < bin.length; i++) { buf[i] = bin.charCodeAt(i); }
+			const ds = new DecompressionStream("deflate-raw");
+			const writer = ds.writable.getWriter();
+			writer.write(buf); writer.close();
+			const out = await new Response(ds.readable).arrayBuffer();
+			return new TextDecoder().decode(out);
+		}
+
+		async function sdpToUrl(sdp) {
+			const compressed = await compress(JSON.stringify(sdp));
+			return location.href.split("#")[0] + "#sdp=" + compressed;
+		}
+
+		async function sdpFromUrl(hash) {
+			try {
+				const m = hash.match(/[#&]sdp=([^&]*)/);
+				if (!m) return null;
+				const json = await decompress(m[1]);
+				return JSON.parse(json);
+			} catch (e) { return null; }
+		}
+
+		function makeQr(containerId, url) {
+			const el = document.getElementById(containerId);
+			el.innerHTML = "";
+			new QRCode(el, { text: url, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.L });
+		}
+
+		function shareOrCopy(url, label) {
+			if (navigator.share) {
+				navigator.share({ title: "Babyphone", text: label, url: url }).catch(() => { });
+			} else if (navigator.clipboard) {
+				navigator.clipboard.writeText(url).then(() => setStatus("Lien copié !"));
+			} else {
+				prompt("Copiez ce lien :", url);
+			}
+		}
+
+		function waitForIceGathering(pc) {
+			return new Promise((resolve) => {
+				if (pc.iceGatheringState === "complete") { resolve(); return; }
+				const check = () => {
+					if (pc.iceGatheringState === "complete") {
+						pc.removeEventListener("icegatheringstatechange", check);
+						resolve();
+					}
+				};
+				pc.addEventListener("icegatheringstatechange", check);
+				setTimeout(resolve, 4000);
+			});
+		}
+
+		async function startBabyphone() {
+			if (isStarted) return;
+			isStarted = true;
+			isEmetteur = roleSelect.value === "emetteur";
+
+			startBtn.disabled = true;
+			stopBtn.disabled = false;
+			roleSelect.disabled = true;
+			playBtnInserted = false;
+			setError("");
+			setStatus("Connexion en cours...");
+
+			try {
+				peerConnection = new RTCPeerConnection(configuration);
+
+				peerConnection.onconnectionstatechange = () => {
+					const state = peerConnection.connectionState;
+					if (state === "connected") {
+						setStatus("Connexion établie ! Audio actif.");
+					} else if (state === "failed") {
+						setStatus("Connexion perdue — nouvelle tentative…");
+						peerConnection.restartIce();
+					} else if (state === "disconnected") {
+						setStatus("Connexion interrompue…");
+					}
+				};
+
+				peerConnection.ontrack = (event) => {
+					if (event.streams && event.streams[0]) {
+						remoteAudio.srcObject = event.streams[0];
+					} else {
+						const ms = new MediaStream();
+						ms.addTrack(event.track);
+						remoteAudio.srcObject = ms;
+					}
+					remoteAudio.play().catch(() => {
+						setStatus("Appuyez sur ▶ pour activer l'audio.");
+						showPlayButton();
+					});
+					setStatus("Audio reçu !");
+				};
+
+				if (isEmetteur) {
+					localStream = await navigator.mediaDevices.getUserMedia({
+						audio: {
+							echoCancellation: false,
+							noiseSuppression: false,
+							autoGainControl: false
+						},
+						video: false
+					});
+					await requestWakeLock();
+					startSilentAudio();
+					startVuMeter(localStream);
+					setStatus("Micro activé");
+					localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+					const offer = await peerConnection.createOffer();
+					await peerConnection.setLocalDescription(offer);
+					await waitForIceGathering(peerConnection);
+
+					const offerUrl = await sdpToUrl(peerConnection.localDescription);
+					makeQr("offerQr", offerUrl);
+					document.getElementById("shareOfferBtn").onclick = () => shareOrCopy(offerUrl, "Ouvre ce lien pour recevoir l'audio du babyphone");
+					show("offerSection");
+					show("pasteAnswerSection");
+					setStatus("QR code prêt — faites-le scanner par le Récepteur.");
+				} else {
+					await requestWakeLock();
+					startSilentAudio();
+					const incomingOffer = await sdpFromUrl(location.hash);
+					if (incomingOffer) {
+						await processIncomingOffer(incomingOffer);
+					} else {
+						setStatus("Aucune offre détectée. Scannez le QR de l'Émetteur.");
+					}
+				}
+
+			} catch (error) {
+				let msg = error.message;
+				if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
+					if (location.protocol !== "https:" && location.hostname !== "localhost") {
+						msg = "Micro refusé : Chrome exige HTTPS. Voir le bandeau rouge ci-dessus.";
+						document.getElementById("httpsWarning").style.display = "block";
+					} else {
+						msg = "Accès au micro refusé. Vérifiez les permissions dans les réglages Chrome.";
+					}
+				} else if (error.name === "NotFoundError") {
+					msg = "Aucun micro détecté sur cet appareil.";
+				}
+				setError(msg);
+				stopBabyphone();
+			}
+		}
+
+		async function processIncomingOffer(offer) {
+			try {
+				await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+				const answer = await peerConnection.createAnswer();
+				await peerConnection.setLocalDescription(answer);
+				await waitForIceGathering(peerConnection);
+
+				const answerUrl = await sdpToUrl(peerConnection.localDescription);
+				makeQr("answerQr", answerUrl);
+				document.getElementById("shareAnswerBtn").onclick = () => shareOrCopy(answerUrl, "Réponse babyphone");
+				show("answerSection");
+				setStatus("QR code prêt — faites-le scanner par l'Émetteur.");
+				setError("");
+			} catch (e) {
+				setError("Offre invalide : " + e.message);
+			}
+		}
+
+		async function processAnswer() {
+			const raw = document.getElementById("answerInput").value.trim();
+			if (!raw) { setError("Veuillez coller la réponse."); return; }
+			try {
+				const fromUrl = await sdpFromUrl(raw);
+				const answer = fromUrl || JSON.parse(raw);
+				await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+				hide("pasteAnswerSection");
+				setStatus("Connexion en cours… En attente de l'audio.");
+				setError("");
+			} catch (e) {
+				setError("Réponse invalide : " + e.message);
+			}
+		}
+
+		function showPlayButton() {
+			if (playBtnInserted) return;
+			playBtnInserted = true;
+			const btn = document.createElement("button");
+			btn.textContent = "▶ Activer l'audio";
+			btn.style.background = "#4CAF50";
+			btn.onclick = () => {
+				remoteAudio.play().then(() => {
+					btn.remove();
+					playBtnInserted = false;
+					setStatus("Audio actif !");
+				});
+			};
+			document.body.appendChild(btn);
+		}
+
+		function stopBabyphone() {
+			isStarted = false;
+			startBtn.disabled = false;
+			stopBtn.disabled = true;
+			roleSelect.disabled = false;
+			playBtnInserted = false;
+
+			stopVuMeter();
+			if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
+			if (peerConnection) { peerConnection.close(); peerConnection = null; }
+			remoteAudio.srcObject = null;
+			if (wakeLock) { wakeLock.release().catch(() => { }); wakeLock = null; }
+			stopSilentAudio();
+			["offerSection", "answerSection", "pasteAnswerSection"].forEach(hide);
+			setStatus("Arrêté");
+		}
+	</script>
+</body>
+
+</html>
