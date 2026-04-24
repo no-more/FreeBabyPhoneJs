@@ -1,116 +1,74 @@
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
 	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Babyphone WebRTC</title>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 	<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 	<style>
-		* {
-			box-sizing: border-box;
-		}
-
 		body {
-			font-family: Arial, sans-serif;
-			text-align: center;
+			font-family: system-ui, -apple-system, sans-serif;
+			max-width: 600px;
+			margin: 20px auto;
 			padding: 16px;
-			background: #f0f0f0;
-			margin: 0;
+			background: #f5f5f5;
 		}
-
 		h1 {
-			font-size: 1.4em;
-			margin-bottom: 8px;
+			text-align: center;
+			color: #333;
 		}
-
-		p {
-			font-size: 0.9em;
-			color: #555;
-			margin: 0 0 12px;
-		}
-
 		button {
-			padding: 14px 24px;
+			padding: 10px 20px;
+			margin: 5px;
 			font-size: 16px;
-			margin: 6px;
 			cursor: pointer;
-			border: none;
-			border-radius: 8px;
-			background: #2196F3;
+			background: #4CAF50;
 			color: white;
-			min-width: 140px;
-			touch-action: manipulation;
+			border: none;
+			border-radius: 6px;
 		}
-
 		button:disabled {
 			background: #aaa;
-			cursor: default;
+			cursor: not-allowed;
 		}
-
-		button#stopBtn {
-			background: #e53935;
-		}
-
 		#status {
-			margin: 14px auto;
-			font-weight: bold;
-			font-size: 1em;
-			max-width: 500px;
-		}
-
-		#error {
-			color: #e53935;
-			margin: 8px;
-			font-size: 0.9em;
-		}
-
-		select {
+			margin: 10px 0;
 			padding: 10px;
-			margin: 8px;
-			font-size: 15px;
-			width: 90%;
-			max-width: 360px;
+			background: #e3f2fd;
 			border-radius: 6px;
-			border: 1px solid #ccc;
 		}
-
+		#error {
+			margin: 10px 0;
+			padding: 10px;
+			background: #ffebee;
+			border-radius: 6px;
+			color: #c62828;
+		}
 		.sdp-section {
-			display: none;
-			margin: 10px auto;
-			max-width: 500px;
-			text-align: left;
+			background: white;
+			padding: 16px;
+			margin: 16px 0;
+			border-radius: 8px;
+			box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 		}
-
-		.sdp-section button {
-			width: 100%;
-			margin: 6px 0 0;
-		}
-
 		.step-hint {
-			background: #fff9c4;
-			border-left: 4px solid #f9a825;
-			padding: 8px 12px;
-			margin-bottom: 8px;
-			font-size: 0.85em;
-			border-radius: 0 6px 6px 0;
+			font-weight: bold;
+			margin-bottom: 12px;
+			color: #555;
 		}
-
 		.qr-container {
 			display: flex;
 			justify-content: center;
 			margin: 10px auto;
 			padding: 15px;
 		}
-
 		.qr-container canvas,
 		.qr-container img {
 			border: 6px solid white;
 			border-radius: 8px;
 			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 		}
-
 		#answerInput {
 			width: 100%;
 			height: 80px;
@@ -120,7 +78,6 @@
 			border: 1px solid #ccc;
 			padding: 6px;
 		}
-
 		#httpsWarning {
 			display: none;
 			background: #ffebee;
@@ -132,7 +89,6 @@
 			font-size: 0.85em;
 			border-radius: 0 6px 6px 0;
 		}
-
 		#vuMeter {
 			display: none;
 			margin: 8px auto;
@@ -142,7 +98,6 @@
 			border-radius: 7px;
 			overflow: hidden;
 		}
-
 		#vuBar {
 			height: 100%;
 			width: 0%;
@@ -150,56 +105,46 @@
 			border-radius: 7px;
 			transition: width 0.1s;
 		}
-
 		#pageShareSection {
 			margin: 32px auto 8px;
 			max-width: 500px;
 			border-top: 1px solid #ccc;
 			padding-top: 20px;
 		}
-
 		#pageShareSection p {
 			margin: 0 0 8px;
 			font-size: 0.8em;
 			color: #888;
 		}
-
 		#pageQr {
 			display: flex;
 			justify-content: center;
 			margin: 8px auto;
 		}
-
 		#pageQr canvas,
 		#pageQr img {
 			border: 4px solid white;
 			border-radius: 6px;
 			box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 		}
-
 		#reader {
 			width: 550px;
 			margin: 10px auto;
 		}
-
 		#readerAnswer {
 			width: 550px;
 			margin: 10px auto;
 		}
-
 		#readerAnswer video {
 			border-radius: 8px;
 		}
-
 		#reader video {
 			border-radius: 8px;
 		}
-
 		.camera-btn {
 			background: #4CAF50;
 			margin: 6px;
 		}
-
 		.camera-btn:disabled {
 			background: #aaa;
 		}
@@ -439,6 +384,25 @@
 			return new TextDecoder().decode(out);
 		}
 
+		// Pour QR code scan : données directes compressées
+		async function sdpToData(sdp) {
+			return await compress(JSON.stringify(sdp));
+		}
+
+		async function sdpFromData(data) {
+			try {
+				console.log("Début sdpFromData avec:", data);
+				const json = await decompress(data);
+				const result = JSON.parse(json);
+				console.log("SDP parsé avec succès");
+				return result;
+			} catch (e) {
+				console.error("Erreur dans sdpFromData:", e);
+				return null;
+			}
+		}
+
+		// Pour partage URL et collage manuel : format URL
 		async function sdpToUrl(sdp) {
 			const compressed = await compress(JSON.stringify(sdp));
 			return location.href.split("#")[0] + "#sdp=" + compressed;
@@ -463,14 +427,14 @@
 			}
 		}
 
-		function makeQr(containerId, url) {
+		function makeQr(containerId, data) {
 			const el = document.getElementById(containerId);
 			el.innerHTML = "";
 			const screenWidth = window.innerWidth;
-			const margin = 32; // 16px padding on each side
+			const margin = 32;
 			const availableWidth = screenWidth - margin;
 			const qrSize = Math.min(600, Math.max(250, availableWidth));
-			new QRCode(el, { text: url, width: qrSize, height: qrSize, correctLevel: QRCode.CorrectLevel.M });
+			new QRCode(el, { text: data, width: qrSize, height: qrSize, correctLevel: QRCode.CorrectLevel.M });
 		}
 
 		function shareOrCopy(url, label) {
@@ -558,9 +522,14 @@
 					await peerConnection.setLocalDescription(offer);
 					await waitForIceGathering(peerConnection);
 
+					// QR code avec données directes pour scan
+					const offerData = await sdpToData(peerConnection.localDescription);
+					makeQr("offerQr", offerData);
+					
+					// URL pour partage/copie
 					const offerUrl = await sdpToUrl(peerConnection.localDescription);
-					makeQr("offerQr", offerUrl);
 					document.getElementById("shareOfferBtn").onclick = () => shareOrCopy(offerUrl, "Ouvre ce lien pour recevoir l'audio du babyphone");
+					
 					show("offerSection");
 					show("pasteAnswerSection");
 					setStatus("QR code prêt — faites-le scanner par le Récepteur.");
@@ -600,9 +569,14 @@
 				await peerConnection.setLocalDescription(answer);
 				await waitForIceGathering(peerConnection);
 
+				// QR code avec données directes pour scan
+				const answerData = await sdpToData(peerConnection.localDescription);
+				makeQr("answerQr", answerData);
+				
+				// URL pour partage/copie
 				const answerUrl = await sdpToUrl(peerConnection.localDescription);
-				makeQr("answerQr", answerUrl);
 				document.getElementById("shareAnswerBtn").onclick = () => shareOrCopy(answerUrl, "Réponse babyphone");
+				
 				show("answerSection");
 				setStatus("QR code prêt — faites-le scanner par l'Émetteur.");
 				setError("");
@@ -644,7 +618,6 @@
 
 		async function startScanOffer() {
 			if (isScanningOffer) return;
-			const readerElement = document.getElementById("reader");
 			const startBtn = document.getElementById("startScanOfferBtn");
 			const stopBtn = document.getElementById("stopScanOfferBtn");
 			try {
@@ -655,7 +628,8 @@
 					async (decodedText) => {
 						console.log("QR scanné:", decodedText);
 						const pageUrl = location.href.split("#")[0];
-						if (decodedText === pageUrl || !decodedText.includes("#sdp=")) {
+						// Vérifier si c'est le QR de partage de page (URL) ou les données SDP
+						if (decodedText === pageUrl || (!decodedText.includes("#sdp=") && decodedText.length < 200)) {
 							setError("❌ Mauvais QR code ! Vous avez scanné le QR de partage de page. Scannez le QR code de l'Émetteur (affiché sur son appareil).");
 							await stopScanOffer();
 							show("scanOfferSection");
@@ -664,7 +638,12 @@
 						await stopScanOffer();
 						hide("scanOfferSection");
 						try {
-							const offer = await sdpFromUrl(decodedText);
+							// Essayer d'abord comme données directes (format scan)
+							let offer = await sdpFromData(decodedText);
+							// Si échec, essayer comme URL (format partage)
+							if (!offer) {
+								offer = await sdpFromUrl(decodedText);
+							}
 							if (offer) {
 								await processIncomingOffer(offer);
 								setStatus("QR code scanné ! Connexion en cours...");
