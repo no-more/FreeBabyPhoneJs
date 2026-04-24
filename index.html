@@ -446,11 +446,21 @@
 
 		async function sdpFromUrl(hash) {
 			try {
+				console.log("Début sdpFromUrl avec:", hash);
 				const m = hash.match(/[#&]sdp=([^&]*)/);
-				if (!m) return null;
+				if (!m) {
+					console.log("Aucun match pour le pattern sdp=");
+					return null;
+				}
+				console.log("Match trouvé:", m[1]);
 				const json = await decompress(m[1]);
-				return JSON.parse(json);
-			} catch (e) { return null; }
+				const result = JSON.parse(json);
+				console.log("SDP parsé avec succès");
+				return result;
+			} catch (e) {
+				console.error("Erreur dans sdpFromUrl:", e);
+				return null;
+			}
 		}
 
 		function makeQr(containerId, url) {
@@ -639,6 +649,14 @@
 					{ facingMode: "environment" },
 					{ fps: 10, qrbox: { width: 350, height: 350 } },
 					async (decodedText) => {
+						console.log("QR scanné:", decodedText);
+						const pageUrl = location.href.split("#")[0];
+						if (decodedText === pageUrl || !decodedText.includes("#sdp=")) {
+							setError("❌ Mauvais QR code ! Vous avez scanné le QR de partage de page. Scannez le QR code de l'Émetteur (affiché sur son appareil).");
+							await stopScanOffer();
+							show("scanOfferSection");
+							return;
+						}
 						await stopScanOffer();
 						hide("scanOfferSection");
 						try {
@@ -648,9 +666,11 @@
 								setStatus("QR code scanné ! Connexion en cours...");
 							} else {
 								setError("QR code invalide.");
+								show("scanOfferSection");
 							}
 						} catch (e) {
 							setError("Erreur lors du scan : " + e.message);
+							show("scanOfferSection");
 						}
 					},
 					() => { }
