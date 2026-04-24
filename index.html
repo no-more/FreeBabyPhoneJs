@@ -177,12 +177,12 @@
 		}
 
 		#reader {
-			width: 300px;
+			width: 380px;
 			margin: 10px auto;
 		}
 
 		#readerAnswer {
-			width: 300px;
+			width: 380px;
 			margin: 10px auto;
 		}
 
@@ -243,17 +243,20 @@
 		<button id="shareOfferBtn"> Partager le lien (alt.)</button>
 	</div>
 
+	<!-- Étape 1b (Récepteur) : Scanner le QR de l'Émetteur -->
+	<div class="sdp-section" id="scanOfferSection" style="display: none;">
+		<div class="step-hint"> <strong>Étape 1 (Récepteur) :</strong> Scannez le QR code de l'Émetteur avec la caméra.
+		</div>
+		<div id="reader"></div>
+		<button id="startScanOfferBtn" class="camera-btn">📷 Démarrer le scanner</button>
+		<button id="stopScanOfferBtn" class="camera-btn" disabled>Arrêter le scanner</button>
+	</div>
+
 	<!-- Étape 2 (Récepteur) : QR code de la réponse -->
 	<div class="sdp-section" id="answerSection">
 		<div class="step-hint"> <strong>Étape 2 (Récepteur) :</strong> Faites scanner ce QR code par l'Émetteur.</div>
 		<div class="qr-container" id="answerQr"></div>
 		<button id="shareAnswerBtn"> Partager le lien (alt.)</button>
-		<div style="margin-top: 16px; border-top: 1px solid #ddd; padding-top: 12px;">
-			<p style="font-size: 0.85em; color: #666;">Ou scanner le QR de l'Émetteur avec la caméra :</p>
-			<div id="reader"></div>
-			<button id="startScanOfferBtn" class="camera-btn">📷 Scanner le QR de l'Émetteur</button>
-			<button id="stopScanOfferBtn" class="camera-btn" disabled>Arrêter le scanner</button>
-		</div>
 	</div>
 
 	<!-- Étape 3 (Émetteur) : coller la réponse -->
@@ -313,8 +316,25 @@
 		const roleSelect = document.getElementById("role");
 		const remoteAudio = document.getElementById("remoteAudio");
 
+		const savedRole = localStorage.getItem("babyphoneRole");
+		if (savedRole) {
+			roleSelect.value = savedRole;
+			isEmetteur = savedRole === "emetteur";
+			if (!isEmetteur) {
+				show("scanOfferSection");
+				setStatus("Prêt à scanner le QR de l'Émetteur.");
+			}
+		}
+
 		roleSelect.addEventListener("change", () => {
 			isEmetteur = roleSelect.value === "emetteur";
+			localStorage.setItem("babyphoneRole", roleSelect.value);
+			if (!isEmetteur && !isStarted) {
+				show("scanOfferSection");
+				setStatus("Prêt à scanner le QR de l'Émetteur.");
+			} else {
+				hide("scanOfferSection");
+			}
 		});
 
 		startBtn.addEventListener("click", startBabyphone);
@@ -537,6 +557,7 @@
 					if (incomingOffer) {
 						await processIncomingOffer(incomingOffer);
 					} else {
+						show("scanOfferSection");
 						setStatus("Aucune offre détectée. Scannez le QR de l'Émetteur.");
 					}
 				}
@@ -616,9 +637,10 @@
 				html5QrCodeOffer = new Html5Qrcode("reader");
 				await html5QrCodeOffer.start(
 					{ facingMode: "environment" },
-					{ fps: 10, qrbox: { width: 250, height: 250 } },
+					{ fps: 10, qrbox: { width: 350, height: 350 } },
 					async (decodedText) => {
 						await stopScanOffer();
+						hide("scanOfferSection");
 						try {
 							const offer = await sdpFromUrl(decodedText);
 							if (offer) {
@@ -662,7 +684,7 @@
 				html5QrCodeAnswer = new Html5Qrcode("readerAnswer");
 				await html5QrCodeAnswer.start(
 					{ facingMode: "environment" },
-					{ fps: 10, qrbox: { width: 250, height: 250 } },
+					{ fps: 10, qrbox: { width: 350, height: 350 } },
 					async (decodedText) => {
 						await stopScanAnswer();
 						document.getElementById("answerInput").value = decodedText;
@@ -704,7 +726,7 @@
 			remoteAudio.srcObject = null;
 			if (wakeLock) { wakeLock.release().catch(() => { }); wakeLock = null; }
 			stopSilentAudio();
-			["offerSection", "answerSection", "pasteAnswerSection"].forEach(hide);
+			["offerSection", "scanOfferSection", "answerSection", "pasteAnswerSection"].forEach(hide);
 			setStatus("Arrêté");
 		}
 	</script>
