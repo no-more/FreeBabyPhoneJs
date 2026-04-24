@@ -6,6 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 	<title>Babyphone WebRTC</title>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+	<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 	<style>
 		* {
 			box-sizing: border-box;
@@ -174,6 +175,33 @@
 			border-radius: 6px;
 			box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 		}
+
+		#reader {
+			width: 300px;
+			margin: 10px auto;
+		}
+
+		#readerAnswer {
+			width: 300px;
+			margin: 10px auto;
+		}
+
+		#readerAnswer video {
+			border-radius: 8px;
+		}
+
+		#reader video {
+			border-radius: 8px;
+		}
+
+		.camera-btn {
+			background: #4CAF50;
+			margin: 6px;
+		}
+
+		.camera-btn:disabled {
+			background: #aaa;
+		}
 	</style>
 </head>
 
@@ -220,14 +248,29 @@
 		<div class="step-hint"> <strong>Étape 2 (Récepteur) :</strong> Faites scanner ce QR code par l'Émetteur.</div>
 		<div class="qr-container" id="answerQr"></div>
 		<button id="shareAnswerBtn"> Partager le lien (alt.)</button>
+		<div style="margin-top: 16px; border-top: 1px solid #ddd; padding-top: 12px;">
+			<p style="font-size: 0.85em; color: #666;">Ou scanner le QR de l'Émetteur avec la caméra :</p>
+			<div id="reader"></div>
+			<button id="startScanOfferBtn" class="camera-btn">📷 Scanner le QR de l'Émetteur</button>
+			<button id="stopScanOfferBtn" class="camera-btn" disabled>Arrêter le scanner</button>
+		</div>
 	</div>
 
 	<!-- Étape 3 (Émetteur) : coller la réponse -->
 	<div class="sdp-section" id="pasteAnswerSection">
 		<div class="step-hint"> <strong>Étape 3 (Émetteur) :</strong> Scannez le QR du Récepteur avec l'appareil photo,
 			puis collez le lien ici.</div>
-		<textarea id="answerInput" placeholder="Collez ici le lien scanné…"></textarea>
-		<button id="processAnswerBtn"> Connecter</button>
+		<div style="margin-bottom: 12px;">
+			<p style="font-size: 0.85em; color: #666;">Option 1 : Scanner directement avec la caméra</p>
+			<div id="readerAnswer"></div>
+			<button id="startScanAnswerBtn" class="camera-btn">📷 Scanner le QR du Récepteur</button>
+			<button id="stopScanAnswerBtn" class="camera-btn" disabled>Arrêter le scanner</button>
+		</div>
+		<div style="margin-top: 16px; border-top: 1px solid #ddd; padding-top: 12px;">
+			<p style="font-size: 0.85em; color: #666;">Option 2 : Coller manuellement le lien</p>
+			<textarea id="answerInput" placeholder="Collez ici le lien scanné…"></textarea>
+			<button id="processAnswerBtn"> Connecter</button>
+		</div>
 	</div>
 
 	<audio id="remoteAudio" autoplay playsinline style="display:none"></audio>
@@ -246,6 +289,11 @@
 		let silentAudioCtx = null;
 		let vuAnimFrame = null;
 		let playBtnInserted = false;
+
+		let html5QrCodeOffer = null;
+		let html5QrCodeAnswer = null;
+		let isScanningOffer = false;
+		let isScanningAnswer = false;
 
 		const configuration = {
 			iceServers: [
@@ -272,6 +320,11 @@
 		startBtn.addEventListener("click", startBabyphone);
 		stopBtn.addEventListener("click", stopBabyphone);
 		document.getElementById("processAnswerBtn").addEventListener("click", processAnswer);
+
+		document.getElementById("startScanOfferBtn").addEventListener("click", startScanOffer);
+		document.getElementById("stopScanOfferBtn").addEventListener("click", stopScanOffer);
+		document.getElementById("startScanAnswerBtn").addEventListener("click", startScanAnswer);
+		document.getElementById("stopScanAnswerBtn").addEventListener("click", stopScanAnswer);
 
 		// QR code statique de partage de la page
 		(function () {
@@ -552,6 +605,90 @@
 				});
 			};
 			document.body.appendChild(btn);
+		}
+
+		async function startScanOffer() {
+			if (isScanningOffer) return;
+			const readerElement = document.getElementById("reader");
+			const startBtn = document.getElementById("startScanOfferBtn");
+			const stopBtn = document.getElementById("stopScanOfferBtn");
+			try {
+				html5QrCodeOffer = new Html5Qrcode("reader");
+				await html5QrCodeOffer.start(
+					{ facingMode: "environment" },
+					{ fps: 10, qrbox: { width: 250, height: 250 } },
+					async (decodedText) => {
+						await stopScanOffer();
+						try {
+							const offer = await sdpFromUrl(decodedText);
+							if (offer) {
+								await processIncomingOffer(offer);
+								setStatus("QR code scanné ! Connexion en cours...");
+							} else {
+								setError("QR code invalide.");
+							}
+						} catch (e) {
+							setError("Erreur lors du scan : " + e.message);
+						}
+					},
+					() => { }
+				);
+				isScanningOffer = true;
+				startBtn.disabled = true;
+				stopBtn.disabled = false;
+				setStatus("Scanner actif — pointez vers le QR de l'Émetteur");
+			} catch (e) {
+				setError("Impossible d'accéder à la caméra : " + e.message);
+			}
+		}
+
+		async function stopScanOffer() {
+			if (!isScanningOffer || !html5QrCodeOffer) return;
+			try {
+				await html5QrCodeOffer.stop();
+				html5QrCodeOffer.clear();
+			} catch (e) { }
+			html5QrCodeOffer = null;
+			isScanningOffer = false;
+			document.getElementById("startScanOfferBtn").disabled = false;
+			document.getElementById("stopScanOfferBtn").disabled = true;
+		}
+
+		async function startScanAnswer() {
+			if (isScanningAnswer) return;
+			const startBtn = document.getElementById("startScanAnswerBtn");
+			const stopBtn = document.getElementById("stopScanAnswerBtn");
+			try {
+				html5QrCodeAnswer = new Html5Qrcode("readerAnswer");
+				await html5QrCodeAnswer.start(
+					{ facingMode: "environment" },
+					{ fps: 10, qrbox: { width: 250, height: 250 } },
+					async (decodedText) => {
+						await stopScanAnswer();
+						document.getElementById("answerInput").value = decodedText;
+						await processAnswer();
+					},
+					() => { }
+				);
+				isScanningAnswer = true;
+				startBtn.disabled = true;
+				stopBtn.disabled = false;
+				setStatus("Scanner actif — pointez vers le QR du Récepteur");
+			} catch (e) {
+				setError("Impossible d'accéder à la caméra : " + e.message);
+			}
+		}
+
+		async function stopScanAnswer() {
+			if (!isScanningAnswer || !html5QrCodeAnswer) return;
+			try {
+				await html5QrCodeAnswer.stop();
+				html5QrCodeAnswer.clear();
+			} catch (e) { }
+			html5QrCodeAnswer = null;
+			isScanningAnswer = false;
+			document.getElementById("startScanAnswerBtn").disabled = false;
+			document.getElementById("stopScanAnswerBtn").disabled = true;
 		}
 
 		function stopBabyphone() {
