@@ -264,6 +264,8 @@
 					<option value="4">4 QR codes</option>
 					<option value="5">5 QR codes</option>
 					<option value="6">6 QR codes</option>
+					<option value="7">7 QR codes</option>
+					<option value="8">8 QR codes</option>
 				</select>
 			</label>
 			<small style="color: #666; display: block; margin-top: 4px;">
@@ -302,6 +304,8 @@
 					<option value="4">4 QR codes</option>
 					<option value="5">5 QR codes</option>
 					<option value="6">6 QR codes</option>
+					<option value="7">7 QR codes</option>
+					<option value="8">8 QR codes</option>
 				</select>
 			</label>
 			<small style="color: #666; display: block; margin-top: 4px;">
@@ -1098,7 +1102,7 @@
 				html5QrCodeOffer = new Html5Qrcode("reader");
 				await html5QrCodeOffer.start(
 					{ facingMode: "environment" },
-					{ fps: 15, qrbox: { width: 350, height: 350 } },
+					{ fps: 15, qrbox: { width: 350, height: 350 }, aspectRatio: 1.0 },
 					async (decodedText) => {
 						console.log("QR scanné:", decodedText);
 						const pageUrl = location.href.split("#")[0];
@@ -1192,7 +1196,7 @@
 				html5QrCodeAnswer = new Html5Qrcode("readerAnswer");
 				await html5QrCodeAnswer.start(
 					{ facingMode: "environment" },
-					{ fps: 15, qrbox: { width: 350, height: 350 } },
+					{ fps: 15, qrbox: { width: 350, height: 350 }, aspectRatio: 1.0 },
 					async (decodedText) => {
 						// Check if this is a partial QR code
 						if (isPartialQr(decodedText)) {
