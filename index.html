@@ -178,7 +178,8 @@
 		}
 
 		#reader {
-			width: 550px;
+			width: 100%;
+			max-width: 550px;
 			margin: 10px auto;
 		}
 
@@ -194,7 +195,8 @@
 		}
 
 		#readerAnswer {
-			width: 550px;
+			width: 100%;
+			max-width: 550px;
 			margin: 10px auto;
 		}
 
@@ -442,7 +444,11 @@
 			window.addEventListener("load", () => startBabyphone(), { once: true });
 		}
 
-		function show(id) { document.getElementById(id).style.display = "block"; }
+		function show(id) {
+			const el = document.getElementById(id);
+			el.style.display = "block";
+			el.scrollIntoView({ behavior: "smooth", block: "start" });
+		}
 		function hide(id) { document.getElementById(id).style.display = "none"; }
 		function setStatus(msg) { statusDiv.textContent = "Statut : " + msg; }
 		function setError(msg) { errorDiv.textContent = msg ? "⚠️ " + msg : ""; }
