@@ -182,6 +182,15 @@
 			margin: 10px auto;
 		}
 
+		#splitControls {
+			text-align: left;
+		}
+
+		#splitControls select {
+			margin: 0;
+			width: auto;
+		}
+
 		#readerAnswer {
 			width: 550px;
 			margin: 10px auto;
@@ -255,15 +264,43 @@
 
 	<!-- Étape 2 (Récepteur) : QR code de la réponse -->
 	<div class="sdp-section" id="answerSection">
-		<div class="step-hint"> <strong>Étape 2 (Récepteur) :</strong> Faites scanner ce QR code par l'Émetteur.</div>
+		<div class="step-hint"> <strong>Étape 2 (Récepteur) :</strong> Faites scanner ce(s) QR code(s) par l'Émetteur.
+		</div>
+		<div id="splitControls" style="margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 6px;">
+			<label style="font-size: 0.9em; display: block; margin-bottom: 8px;">
+				<strong>Mode QR code :</strong>
+				<select id="splitMode" style="width: auto; min-width: 150px; margin-left: 8px;">
+					<option value="1">1 QR code (auto)</option>
+					<option value="2">2 QR codes</option>
+					<option value="3">3 QR codes</option>
+					<option value="4">4 QR codes</option>
+				</select>
+			</label>
+			<small style="color: #666; display: block; margin-top: 4px;">
+				Si le QR code est trop grand à scanner, sélectionnez plusieurs parties.
+			</small>
+		</div>
+		<div id="qrNavigation" style="display: none; margin: 10px 0;">
+			<button id="prevQrBtn" style="min-width: 50px; padding: 8px 12px;">←</button>
+			<span id="qrCounter" style="margin: 0 15px; font-weight: bold;">1 / 1</span>
+			<button id="nextQrBtn" style="min-width: 50px; padding: 8px 12px;">→</button>
+		</div>
 		<div class="qr-container" id="answerQr"></div>
 		<button id="shareAnswerBtn"> Partager le lien (alt.)</button>
 	</div>
 
 	<!-- Étape 3 (Émetteur) : coller la réponse -->
 	<div class="sdp-section" id="pasteAnswerSection">
-		<div class="step-hint"> <strong>Étape 3 (Émetteur) :</strong> Scannez le QR du Récepteur avec l'appareil photo,
-			puis collez le lien ici.</div>
+		<div class="step-hint"> <strong>Étape 3 (Émetteur) :</strong> Scannez le(s) QR du Récepteur avec l'appareil
+			photo.
+			Si plusieurs QR codes sont affichés, scannez-les tous.</div>
+		<div id="partialScanStatus"
+			style="display: none; margin: 10px 0; padding: 10px; background: #e3f2fd; border-radius: 6px; border-left: 4px solid #2196F3;">
+			<strong>Progression :</strong> <span id="partialScanCount">0</span> partie(s) scannée(s)
+			<div id="partialScanParts" style="margin-top: 6px; font-size: 0.85em; color: #555;"></div>
+			<button id="resetPartialScanBtn"
+				style="margin-top: 8px; padding: 6px 12px; font-size: 0.85em; background: #ff9800;">Réinitialiser</button>
+		</div>
 		<div style="margin-bottom: 12px;">
 			<p style="font-size: 0.85em; color: #666;">Option 1 : Scanner directement avec la caméra</p>
 			<div id="readerAnswer"></div>
@@ -271,8 +308,9 @@
 			<button id="stopScanAnswerBtn" class="camera-btn" disabled>Arrêter le scanner</button>
 		</div>
 		<div style="margin-top: 16px; border-top: 1px solid #ddd; padding-top: 12px;">
-			<p style="font-size: 0.85em; color: #666;">Option 2 : Coller manuellement le lien</p>
-			<textarea id="answerInput" placeholder="Collez ici le lien scanné…"></textarea>
+			<p style="font-size: 0.85em; color: #666;">Option 2 : Coller manuellement le lien (toutes les parties)</p>
+			<textarea id="answerInput"
+				placeholder="Collez ici le lien scanné (ou toutes les parties séparées par des virgules)…"></textarea>
 			<button id="processAnswerBtn"> Connecter</button>
 		</div>
 	</div>
@@ -305,6 +343,12 @@
 		let html5QrCodeAnswer = null;
 		let isScanningOffer = false;
 		let isScanningAnswer = false;
+
+		// QR code splitting variables
+		let answerQrParts = [];
+		let currentQrIndex = 0;
+		let partialScans = new Map();
+		let expectedTotalParts = 0;
 
 		const configuration = {
 			iceServers: [
@@ -352,6 +396,9 @@
 		document.getElementById("stopScanOfferBtn").addEventListener("click", stopScanOffer);
 		document.getElementById("startScanAnswerBtn").addEventListener("click", startScanAnswer);
 		document.getElementById("stopScanAnswerBtn").addEventListener("click", stopScanAnswer);
+		document.getElementById("prevQrBtn").addEventListener("click", showPrevQr);
+		document.getElementById("nextQrBtn").addEventListener("click", showNextQr);
+		document.getElementById("resetPartialScanBtn").addEventListener("click", resetPartialScans);
 
 		// QR code statique de partage de la page
 		(function () {
@@ -504,6 +551,140 @@
 			});
 		}
 
+		// Split data into chunks for multiple QR codes
+		function splitData(data, numParts) {
+			const chunks = [];
+			const chunkSize = Math.ceil(data.length / numParts);
+			for (let i = 0; i < numParts; i++) {
+				const start = i * chunkSize;
+				const end = Math.min(start + chunkSize, data.length);
+				const chunk = data.substring(start, end);
+				// Add metadata: part index, total parts, and chunk data
+				chunks.push(`${i + 1}/${numParts}:${chunk}`);
+			}
+			return chunks;
+		}
+
+		// Combine chunks back into original data
+		function combineData(chunks) {
+			// Sort by part index and extract data
+			const sorted = chunks.sort((a, b) => {
+				const idxA = parseInt(a.split(':')[0].split('/')[0]);
+				const idxB = parseInt(b.split(':')[0].split('/')[0]);
+				return idxA - idxB;
+			});
+			return sorted.map(chunk => chunk.split(':').slice(1).join(':')).join('');
+		}
+
+		// Check if text is a partial QR code
+		function isPartialQr(text) {
+			return /^\d+\/\d+:/.test(text);
+		}
+
+		// Parse partial QR code metadata
+		function parsePartialQr(text) {
+			const match = text.match(/^(\d+)\/(\d+):(.+)$/);
+			if (!match) return null;
+			return {
+				index: parseInt(match[1]),
+				total: parseInt(match[2]),
+				data: match[3]
+			};
+		}
+
+		// Update QR code display with navigation
+		function updateQrDisplay() {
+			const container = document.getElementById("answerQr");
+			container.innerHTML = "";
+			if (answerQrParts.length === 0) return;
+
+			const part = answerQrParts[currentQrIndex];
+			const screenWidth = window.innerWidth;
+			const margin = 32;
+			const availableWidth = screenWidth - margin;
+			const qrSize = Math.min(600, Math.max(250, availableWidth));
+
+			new QRCode(container, { text: part, width: qrSize, height: qrSize, correctLevel: QRCode.CorrectLevel.M });
+
+			// Update counter
+			document.getElementById("qrCounter").textContent = `${currentQrIndex + 1} / ${answerQrParts.length}`;
+
+			// Update button states
+			document.getElementById("prevQrBtn").disabled = currentQrIndex === 0;
+			document.getElementById("nextQrBtn").disabled = currentQrIndex === answerQrParts.length - 1;
+		}
+
+		function showPrevQr() {
+			if (currentQrIndex > 0) {
+				currentQrIndex--;
+				updateQrDisplay();
+			}
+		}
+
+		function showNextQr() {
+			if (currentQrIndex < answerQrParts.length - 1) {
+				currentQrIndex++;
+				updateQrDisplay();
+			}
+		}
+
+		// Update partial scan status display
+		function updatePartialScanStatus() {
+			const statusDiv = document.getElementById("partialScanStatus");
+			if (partialScans.size === 0) {
+				statusDiv.style.display = "none";
+				return;
+			}
+
+			statusDiv.style.display = "block";
+			document.getElementById("partialScanCount").textContent = partialScans.size;
+
+			// Show which parts are scanned
+			const parts = [];
+			for (let i = 1; i <= expectedTotalParts; i++) {
+				parts.push(partialScans.has(i) ? `✓ Partie ${i}` : `○ Partie ${i}`);
+			}
+			document.getElementById("partialScanParts").textContent = parts.join(" | ");
+		}
+
+		function resetPartialScans() {
+			partialScans.clear();
+			expectedTotalParts = 0;
+			updatePartialScanStatus();
+			setStatus("Scan partiel réinitialisé. Rescannez les QR codes.");
+		}
+
+		// Handle partial QR code scan
+		function handlePartialScan(text) {
+			const parsed = parsePartialQr(text);
+			if (!parsed) return false;
+
+			// Set expected total if this is the first partial scan
+			if (expectedTotalParts === 0) {
+				expectedTotalParts = parsed.total;
+			} else if (expectedTotalParts !== parsed.total) {
+				setError("Incohérence : ce QR code appartient à un ensemble différent.");
+				return true;
+			}
+
+			// Store this part
+			partialScans.set(parsed.index, text);
+			updatePartialScanStatus();
+
+			// Check if we have all parts
+			if (partialScans.size === expectedTotalParts) {
+				const allParts = [];
+				for (let i = 1; i <= expectedTotalParts; i++) {
+					allParts.push(partialScans.get(i));
+				}
+				const combined = combineData(allParts);
+				return combined;
+			}
+
+			setStatus(`Partie ${parsed.index}/${parsed.total} scannée. Scannez les parties manquantes.`);
+			return "pending";
+		}
+
 		async function startBabyphone() {
 			if (isStarted) return;
 			isStarted = true;
@@ -608,10 +789,50 @@
 				await waitForIceGathering(peerConnection);
 
 				const compressedAnswer = await compress(JSON.stringify(peerConnection.localDescription));
-				makeQr("answerQr", compressedAnswer);
-				document.getElementById("shareAnswerBtn").onclick = () => shareOrCopy(compressedAnswer, "Réponse babyphone");
+
+				// Get split mode preference
+				const splitMode = parseInt(document.getElementById("splitMode").value);
+				const navDiv = document.getElementById("qrNavigation");
+
+				if (splitMode > 1) {
+					// Split into multiple QR codes
+					answerQrParts = splitData(compressedAnswer, splitMode);
+					currentQrIndex = 0;
+					updateQrDisplay();
+					navDiv.style.display = "block";
+
+					// Share button combines all parts
+					document.getElementById("shareAnswerBtn").onclick = () => {
+						const combined = answerQrParts.join(",");
+						shareOrCopy(combined, "Réponse babyphone (toutes les parties)");
+					};
+
+					setStatus(`${answerQrParts.length} QR codes prêts — faites-les scanner un par un par l'Émetteur.`);
+				} else {
+					// Auto mode: split if data is too large (>800 chars)
+					if (compressedAnswer.length > 800) {
+						const autoParts = Math.ceil(compressedAnswer.length / 600);
+						answerQrParts = splitData(compressedAnswer, autoParts);
+						currentQrIndex = 0;
+						updateQrDisplay();
+						navDiv.style.display = "block";
+						document.getElementById("shareAnswerBtn").onclick = () => {
+							const combined = answerQrParts.join(",");
+							shareOrCopy(combined, "Réponse babyphone (toutes les parties)");
+						};
+						setStatus(`${answerQrParts.length} QR codes générés automatiquement (données volumineuses).`);
+					} else {
+						// Single QR code
+						answerQrParts = [compressedAnswer];
+						currentQrIndex = 0;
+						updateQrDisplay();
+						navDiv.style.display = "none";
+						document.getElementById("shareAnswerBtn").onclick = () => shareOrCopy(compressedAnswer, "Réponse babyphone");
+						setStatus("QR code prêt — faites-le scanner par l'Émetteur.");
+					}
+				}
+
 				show("answerSection");
-				setStatus("QR code prêt — faites-le scanner par l'Émetteur.");
 				setError("");
 			} catch (e) {
 				setError("Offre invalide : " + e.message);
@@ -622,14 +843,22 @@
 			const raw = document.getElementById("answerInput").value.trim();
 			if (!raw) { setError("Veuillez coller la réponse."); return; }
 			try {
+				let dataToProcess = raw;
+
+				// Check if this is comma-separated partial QR codes
+				if (raw.includes(',') && isPartialQr(raw.split(',')[0])) {
+					const parts = raw.split(',').map(p => p.trim()).filter(p => p);
+					dataToProcess = combineData(parts);
+				}
+
 				let answer;
-				const fromUrl = await sdpFromUrl(raw);
+				const fromUrl = await sdpFromUrl(dataToProcess);
 				if (fromUrl) {
 					answer = fromUrl;
-				} else if (raw.includes('{')) {
-					answer = JSON.parse(raw);
+				} else if (dataToProcess.includes('{')) {
+					answer = JSON.parse(dataToProcess);
 				} else {
-					const json = await decompress(raw);
+					const json = await decompress(dataToProcess);
 					answer = JSON.parse(json);
 				}
 				await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
@@ -725,6 +954,22 @@
 					{ facingMode: "environment" },
 					{ fps: 15, qrbox: { width: 1024, height: 1024 } },
 					async (decodedText) => {
+						// Check if this is a partial QR code
+						if (isPartialQr(decodedText)) {
+							const result = handlePartialScan(decodedText);
+							if (result === "pending") {
+								// Keep scanning for more parts
+								return;
+							} else if (result && result !== true) {
+								// We have all parts, use the combined data
+								await stopScanAnswer();
+								document.getElementById("answerInput").value = result;
+								await processAnswer();
+							}
+							return;
+						}
+
+						// Single QR code (not split)
 						await stopScanAnswer();
 						document.getElementById("answerInput").value = decodedText;
 						await processAnswer();
@@ -765,6 +1010,13 @@
 			remoteAudio.srcObject = null;
 			if (wakeLock) { wakeLock.release().catch(() => { }); wakeLock = null; }
 			stopSilentAudio();
+
+			// Reset QR splitting state
+			answerQrParts = [];
+			currentQrIndex = 0;
+			resetPartialScans();
+			document.getElementById("qrNavigation").style.display = "none";
+
 			["offerSection", "scanOfferSection", "answerSection", "pasteAnswerSection"].forEach(hide);
 			setStatus("Arrêté");
 		}
