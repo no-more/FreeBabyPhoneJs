@@ -5,8 +5,8 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 	<title>Babyphone WebRTC</title>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-	<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+	<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+	<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" type="text/javascript"></script>
 	<style>
 		* {
 			box-sizing: border-box;
@@ -442,7 +442,10 @@
 		(function () {
 			const pageUrl = location.href.split("#")[0];
 			const el = document.getElementById("pageQr");
-			new QRCode(el, { text: pageUrl, width: 160, height: 160, correctLevel: QRCode.CorrectLevel.M });
+			el.innerHTML = "";
+			const canvas = document.createElement("canvas");
+			el.appendChild(canvas);
+			QRCode.toCanvas(canvas, pageUrl, { width: 160, errorCorrectionLevel: "M" });
 		})();
 
 		// Auto-start récepteur si l'URL contient déjà une offre
@@ -576,7 +579,9 @@
 			const margin = 32; // 16px padding on each side
 			const availableWidth = screenWidth - margin;
 			const qrSize = Math.min(600, Math.max(250, availableWidth));
-			new QRCode(el, { text: url, width: qrSize, height: qrSize, correctLevel: QRCode.CorrectLevel.M });
+			const canvas = document.createElement("canvas");
+			el.appendChild(canvas);
+			QRCode.toCanvas(canvas, url, { width: qrSize, errorCorrectionLevel: "M" });
 		}
 
 		function shareOrCopy(url, label) {
@@ -656,7 +661,9 @@
 			const availableWidth = screenWidth - margin;
 			const qrSize = Math.min(600, Math.max(250, availableWidth));
 
-			new QRCode(container, { text: part, width: qrSize, height: qrSize, correctLevel: QRCode.CorrectLevel.M });
+			const canvas = document.createElement("canvas");
+			container.appendChild(canvas);
+			QRCode.toCanvas(canvas, part, { width: qrSize, errorCorrectionLevel: "M" });
 
 			// Update counter
 			document.getElementById("qrCounter").textContent = `${currentQrIndex + 1} / ${answerQrParts.length}`;
@@ -691,7 +698,9 @@
 			const availableWidth = screenWidth - margin;
 			const qrSize = Math.min(600, Math.max(250, availableWidth));
 
-			new QRCode(container, { text: part, width: qrSize, height: qrSize, correctLevel: QRCode.CorrectLevel.M });
+			const canvas = document.createElement("canvas");
+			container.appendChild(canvas);
+			QRCode.toCanvas(canvas, part, { width: qrSize, errorCorrectionLevel: "M" });
 
 			document.getElementById("offerQrCounter").textContent = `${currentOfferQrIndex + 1} / ${offerQrParts.length}`;
 			document.getElementById("prevOfferQrBtn").disabled = currentOfferQrIndex === 0;
