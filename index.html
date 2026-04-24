@@ -447,7 +447,9 @@
 		function show(id) {
 			const el = document.getElementById(id);
 			el.style.display = "block";
-			el.scrollIntoView({ behavior: "smooth", block: "start" });
+			setTimeout(() => {
+				el.scrollIntoView({ behavior: "smooth", block: "center" });
+			}, 200);
 		}
 		function hide(id) { document.getElementById(id).style.display = "none"; }
 		function setStatus(msg) { statusDiv.textContent = "Statut : " + msg; }
