@@ -1199,10 +1199,8 @@ async function startScanOffer() {
 				const decodedText = result.data;
 				const pageUrl = location.href.split("#")[0];
 				if (decodedText === pageUrl) {
-					setError("❌ Mauvais QR code ! Vous avez scanné le QR de partage de page. Scannez le QR code de l'Émetteur (affiché sur son appareil).");
-					await stopScanOffer();
-					show("scanOfferSection");
-					openModal("scanOfferModal");
+					setStatus("❌ Mauvais QR code ! Vous avez scanné le QR de partage de page. Scannez le QR code de l'Émetteur.");
+					showToast("Mauvais QR code — scannez celui de l'Émetteur");
 					return;
 				}
 
@@ -1238,10 +1236,8 @@ async function startScanOffer() {
 
 				// Check if this is a URL with sdp
 				if (!decodedText.includes("#sdp=")) {
-					setError("❌ Mauvais QR code ! Scannez le QR code de l'Émetteur (affiché sur son appareil).");
-					await stopScanOffer();
-					show("scanOfferSection");
-					openModal("scanOfferModal");
+					setStatus("❌ Mauvais QR code ! Scannez le QR code de l'Émetteur.");
+					showToast("QR code invalide — réessayez");
 					return;
 				}
 
