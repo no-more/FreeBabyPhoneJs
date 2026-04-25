@@ -56,7 +56,7 @@
 	</div>
 
 	<!-- Étape 1 (Émetteur) : QR code de l'offre -->
-	<div class="sdp-section" id="offerSection">
+	<div class="sdp-section hidden" id="offerSection">
 		<div class="step-hint"> <strong>Étape 1 (Émetteur) :</strong> Faites scanner ce(s) QR code(s) par le Récepteur.
 		</div>
 		<button id="showOfferQrBtn">📱 Afficher le(s) QR code(s)</button>
@@ -78,14 +78,14 @@
 						<option value="4">4 QR codes</option>
 					</select>
 				</label>
-				<div id="multiQrMessageOffer">
+				<div id="multiQrMessageOffer" class="hidden">
 					<strong>Mode multi-QR activé :</strong>
 					<br>
 					Pour améliorer la lisibilité, le QR code a été découpé en plusieurs parties. Le récepteur doit
 					<strong>tous</strong> les scanner.
 				</div>
 			</div>
-			<div id="offerQrNavigation">
+			<div id="offerQrNavigation" class="hidden">
 				<button id="prevOfferQrBtn">←</button>
 				<span id="offerQrCounter">1 / 1</span>
 				<button id="nextOfferQrBtn">→</button>
@@ -97,7 +97,7 @@
 	</div>
 
 	<!-- Étape 1b (Récepteur) : Scanner le QR de l'Émetteur -->
-	<div class="sdp-section" id="scanOfferSection">
+	<div class="sdp-section hidden" id="scanOfferSection">
 		<div class="step-hint"> <strong>Étape 1 (Récepteur) :</strong> Scannez le QR code de l'Émetteur avec la caméra.
 		</div>
 		<button id="showScanOfferBtn">📷 Ouvrir le scanner</button>
@@ -113,7 +113,7 @@
 	</div>
 
 	<!-- Étape 2 (Récepteur) : QR code de la réponse -->
-	<div class="sdp-section" id="answerSection">
+	<div class="sdp-section hidden" id="answerSection">
 		<div class="step-hint"> <strong>Étape 2 (Récepteur) :</strong> Faites scanner ce(s) QR code(s) par l'Émetteur.
 		</div>
 		<button id="showAnswerQrBtn">📱 Afficher le(s) QR code(s)</button>
@@ -138,14 +138,14 @@
 				<small>
 					Si le QR code est trop grand à scanner, sélectionnez plusieurs parties.
 				</small>
-				<div id="multiQrMessage">
+				<div id="multiQrMessage" class="hidden">
 					<strong>Mode multi-QR activé :</strong>
 					<br>
 					Pour améliorer la lisibilité, le QR code a été découpé en plusieurs parties. L'éméteur doit
 					<strong>tous</strong> les scanner.
 				</div>
 			</div>
-			<div id="qrNavigation">
+			<div id="qrNavigation" class="hidden">
 				<button id="prevQrBtn">←</button>
 				<span id="qrCounter">1 / 1</span>
 				<button id="nextQrBtn">→</button>
@@ -157,11 +157,11 @@
 	</div>
 
 	<!-- Étape 3 (Émetteur) : coller la réponse -->
-	<div class="sdp-section" id="pasteAnswerSection">
+	<div class="sdp-section hidden" id="pasteAnswerSection">
 		<div class="step-hint"> <strong>Étape 3 (Émetteur) :</strong> Scannez le(s) QR du Récepteur avec l'appareil
 			photo.
 			Si plusieurs QR codes sont affichés, scannez-les tous.</div>
-		<div id="partialScanStatus">
+		<div id="partialScanStatus" class="hidden">
 			<strong>Progression :</strong> <span id="partialScanCount">0</span> partie(s) scannée(s)
 			<div id="partialScanParts"></div>
 			<button id="resetPartialScanBtn">Réinitialiser</button>

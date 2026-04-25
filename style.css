@@ -97,10 +97,6 @@
 }
 
 /* Modal display states */
-.modal {
-	display: none;
-}
-
 .modal.open {
 	display: block;
 }
@@ -170,7 +166,6 @@ select {
 }
 
 .sdp-section {
-	display: none;
 	margin: 10px auto;
 	max-width: 500px;
 	text-align: left;
@@ -217,7 +212,6 @@ select {
 }
 
 #httpsWarning {
-	display: none;
 	background: #ffebee;
 	border-left: 4px solid #e53935;
 	padding: 10px 14px;
@@ -348,7 +342,6 @@ select {
 /* Multi QR messages */
 #multiQrMessage,
 #multiQrMessageOffer {
-	display: none;
 	margin-top: 10px;
 	padding: 10px;
 	background: #fff3e0;
@@ -360,7 +353,6 @@ select {
 /* QR Navigation */
 #qrNavigation,
 #offerQrNavigation {
-	display: none;
 	flex-direction: row;
 	gap: 1em;
 	margin: 10px 0;
@@ -391,7 +383,6 @@ video#readerAnswer {
 
 /* Partial scan status */
 #partialScanStatus {
-	display: none;
 	margin: 10px 0;
 	padding: 10px;
 	background: #e3f2fd;
@@ -410,16 +401,6 @@ video#readerAnswer {
 	padding: 6px 12px;
 	font-size: 0.85em;
 	background: #ff9800;
-}
-
-/* Hidden by default sections */
-#scanOfferSection {
-	display: none;
-}
-
-/* Audio element */
-#remoteAudio {
-	display: none;
 }
 
 /* Version info */
