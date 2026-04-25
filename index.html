@@ -45,75 +45,104 @@
 	<div class="sdp-section" id="offerSection">
 		<div class="step-hint"> <strong>Étape 1 (Émetteur) :</strong> Faites scanner ce(s) QR code(s) par le Récepteur.
 		</div>
-		<div id="splitControlsOffer">
-			<label>
-				<strong>Mode QR code :</strong>
-				<select id="splitModeOffer">
-					<option value="auto" selected>Auto (recommandé)</option>
-					<option value="1">1 QR code</option>
-					<option value="2">2 QR codes</option>
-					<option value="3">3 QR codes</option>
-					<option value="4">4 QR codes</option>
-				</select>
-			</label>
-			<small>
-				Si le QR code est trop grand à scanner, sélectionnez plusieurs parties.
-			</small>
-			<div id="multiQrMessageOffer">
-				<strong>Mode multi-QR activé :</strong><br>
-				Plusieurs QR codes seront générés. Le récepteur doit les scanner <strong>tous</strong> (un par un) pour
-				reconstituer le lien complet.
+		<button id="showOfferQrBtn">📱 Afficher le(s) QR code(s)</button>
+	</div>
+
+	<!-- Modal for Offer QR -->
+	<div id="offerQrModal" class="modal">
+		<div class="modal-content">
+			<span class="close-modal" id="closeOfferQrModal">&times;</span>
+			<h2>QR Code de l'offre</h2>
+			<div id="splitControlsOffer">
+				<label>
+					<strong>Mode QR code :</strong>
+					<select id="splitModeOffer">
+						<option value="auto" selected>Auto (recommandé)</option>
+						<option value="1">1 QR code</option>
+						<option value="2">2 QR codes</option>
+						<option value="3">3 QR codes</option>
+						<option value="4">4 QR codes</option>
+					</select>
+				</label>
+				<small>
+					Si le QR code est trop grand à scanner, sélectionnez plusieurs parties.
+				</small>
+				<div id="multiQrMessageOffer">
+					<strong>Mode multi-QR activé :</strong><br>
+					Plusieurs QR codes seront générés. Le récepteur doit les scanner <strong>tous</strong> (un par un)
+					pour
+					reconstituer le lien complet.
+				</div>
 			</div>
+			<div id="offerQrNavigation">
+				<button id="prevOfferQrBtn">←</button>
+				<span id="offerQrCounter">1 / 1</span>
+				<button id="nextOfferQrBtn">→</button>
+			</div>
+			<div class="qr-container" id="offerQr"></div>
+			<button id="shareOfferBtn"> Partager le lien (alt.)</button>
 		</div>
-		<div id="offerQrNavigation">
-			<button id="prevOfferQrBtn">←</button>
-			<span id="offerQrCounter">1 / 1</span>
-			<button id="nextOfferQrBtn">→</button>
-		</div>
-		<div class="qr-container" id="offerQr"></div>
-		<button id="shareOfferBtn"> Partager le lien (alt.)</button>
 	</div>
 
 	<!-- Étape 1b (Récepteur) : Scanner le QR de l'Émetteur -->
 	<div class="sdp-section" id="scanOfferSection">
 		<div class="step-hint"> <strong>Étape 1 (Récepteur) :</strong> Scannez le QR code de l'Émetteur avec la caméra.
 		</div>
-		<video id="reader"></video>
-		<button id="startScanOfferBtn" class="camera-btn">📷 Démarrer le scanner</button>
-		<button id="stopScanOfferBtn" class="camera-btn" disabled>Arrêter le scanner</button>
+		<button id="showScanOfferBtn">📷 Ouvrir le scanner</button>
+	</div>
+
+	<!-- Modal for Offer Scanner -->
+	<div id="scanOfferModal" class="modal">
+		<div class="modal-content">
+			<span class="close-modal" id="closeScanOfferModal">&times;</span>
+			<h2>Scanner le QR de l'Émetteur</h2>
+			<video id="reader"></video>
+			<button id="startScanOfferBtn" class="camera-btn">📷 Démarrer le scanner</button>
+			<button id="stopScanOfferBtn" class="camera-btn" disabled>Arrêter le scanner</button>
+		</div>
 	</div>
 
 	<!-- Étape 2 (Récepteur) : QR code de la réponse -->
 	<div class="sdp-section" id="answerSection">
 		<div class="step-hint"> <strong>Étape 2 (Récepteur) :</strong> Faites scanner ce(s) QR code(s) par l'Émetteur.
 		</div>
-		<div id="splitControls">
-			<label>
-				<strong>Mode QR code :</strong>
-				<select id="splitMode">
-					<option value="auto" selected>Auto (recommandé)</option>
-					<option value="1">1 QR code</option>
-					<option value="2">2 QR codes</option>
-					<option value="3">3 QR codes</option>
-					<option value="4">4 QR codes</option>
-				</select>
-			</label>
-			<small>
-				Si le QR code est trop grand à scanner, sélectionnez plusieurs parties.
-			</small>
-			<div id="multiQrMessage">
-				<strong>Mode multi-QR activé :</strong><br>
-				Plusieurs QR codes seront générés. L'émetteur doit les scanner <strong>tous</strong> (un par un) pour
-				reconstituer le lien complet.
+		<button id="showAnswerQrBtn">📱 Afficher le(s) QR code(s)</button>
+	</div>
+
+	<!-- Modal for Answer QR -->
+	<div id="answerQrModal" class="modal">
+		<div class="modal-content">
+			<span class="close-modal" id="closeAnswerQrModal">&times;</span>
+			<h2>QR Code de la réponse</h2>
+			<div id="splitControls">
+				<label>
+					<strong>Mode QR code :</strong>
+					<select id="splitMode">
+						<option value="auto" selected>Auto (recommandé)</option>
+						<option value="1">1 QR code</option>
+						<option value="2">2 QR codes</option>
+						<option value="3">3 QR codes</option>
+						<option value="4">4 QR codes</option>
+					</select>
+				</label>
+				<small>
+					Si le QR code est trop grand à scanner, sélectionnez plusieurs parties.
+				</small>
+				<div id="multiQrMessage">
+					<strong>Mode multi-QR activé :</strong><br>
+					Plusieurs QR codes seront générés. L'émetteur doit les scanner <strong>tous</strong> (un par un)
+					pour
+					reconstituer le lien complet.
+				</div>
 			</div>
+			<div id="qrNavigation">
+				<button id="prevQrBtn">←</button>
+				<span id="qrCounter">1 / 1</span>
+				<button id="nextQrBtn">→</button>
+			</div>
+			<div class="qr-container" id="answerQr"></div>
+			<button id="shareAnswerBtn"> Partager le lien (alt.)</button>
 		</div>
-		<div id="qrNavigation">
-			<button id="prevQrBtn">←</button>
-			<span id="qrCounter">1 / 1</span>
-			<button id="nextQrBtn">→</button>
-		</div>
-		<div class="qr-container" id="answerQr"></div>
-		<button id="shareAnswerBtn"> Partager le lien (alt.)</button>
 	</div>
 
 	<!-- Étape 3 (Émetteur) : coller la réponse -->
@@ -126,17 +155,23 @@
 			<div id="partialScanParts"></div>
 			<button id="resetPartialScanBtn">Réinitialiser</button>
 		</div>
-		<div class="mb-12">
-			<p class="hint-text">Option 1 : Scanner directement avec la caméra</p>
-			<video id="readerAnswer"></video>
-			<button id="startScanAnswerBtn" class="camera-btn">📷 Scanner le QR du Récepteur</button>
-			<button id="stopScanAnswerBtn" class="camera-btn" disabled>Arrêter le scanner</button>
-		</div>
+		<button id="showScanAnswerBtn">📷 Ouvrir le scanner</button>
 		<div class="mt-16 border-top pt-12">
 			<p class="hint-text">Option 2 : Coller manuellement le lien (toutes les parties)</p>
 			<textarea id="answerInput"
 				placeholder="Collez ici le lien scanné (ou toutes les parties séparées par des virgules)…"></textarea>
 			<button id="processAnswerBtn"> Connecter</button>
+		</div>
+	</div>
+
+	<!-- Modal for Answer Scanner -->
+	<div id="scanAnswerModal" class="modal">
+		<div class="modal-content">
+			<span class="close-modal" id="closeScanAnswerModal">&times;</span>
+			<h2>Scanner le QR du Récepteur</h2>
+			<video id="readerAnswer"></video>
+			<button id="startScanAnswerBtn" class="camera-btn">📷 Scanner le QR du Récepteur</button>
+			<button id="stopScanAnswerBtn" class="camera-btn" disabled>Arrêter le scanner</button>
 		</div>
 	</div>
 

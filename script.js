@@ -137,6 +137,31 @@ document.getElementById("resetPartialScanBtn").addEventListener("click", resetPa
 document.getElementById("splitModeOffer").addEventListener("change", regenerateOfferQrCodes);
 document.getElementById("splitMode").addEventListener("change", regenerateAnswerQrCodes);
 
+// Modal open/close event listeners
+document.getElementById("showOfferQrBtn").addEventListener("click", () => openModal("offerQrModal"));
+document.getElementById("closeOfferQrModal").addEventListener("click", () => closeModal("offerQrModal"));
+document.getElementById("showScanOfferBtn").addEventListener("click", () => openModal("scanOfferModal"));
+document.getElementById("closeScanOfferModal").addEventListener("click", () => {
+	closeModal("scanOfferModal");
+	if (isScanningOffer) stopScanOffer();
+});
+document.getElementById("showAnswerQrBtn").addEventListener("click", () => openModal("answerQrModal"));
+document.getElementById("closeAnswerQrModal").addEventListener("click", () => closeModal("answerQrModal"));
+document.getElementById("showScanAnswerBtn").addEventListener("click", () => openModal("scanAnswerModal"));
+document.getElementById("closeScanAnswerModal").addEventListener("click", () => {
+	closeModal("scanAnswerModal");
+	if (isScanningAnswer) stopScanAnswer();
+});
+
+// Close modals when clicking outside
+window.addEventListener("click", (e) => {
+	if (e.target.classList.contains("modal")) {
+		e.target.style.display = "none";
+		if (isScanningOffer && e.target.id === "scanOfferModal") stopScanOffer();
+		if (isScanningAnswer && e.target.id === "scanAnswerModal") stopScanAnswer();
+	}
+});
+
 // QR code statique de partage de la page
 (function () {
 	const pageUrl = location.href.split("#")[0];
@@ -157,11 +182,19 @@ if (location.hash.includes("sdp=")) {
 function show(id) {
 	const el = document.getElementById(id);
 	el.style.display = "block";
-	setTimeout(() => {
-		el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
-	}, 400);
 }
-function hide(id) { document.getElementById(id).style.display = "none"; }
+function hide(id) { document.getElementById(id).style.display = "none" }
+
+function openModal(modalId) {
+	const modal = document.getElementById(modalId);
+	modal.style.display = "block";
+}
+
+function closeModal(modalId) {
+	const modal = document.getElementById(modalId);
+	modal.style.display = "none";
+}
+
 function setStatus(msg) { statusDiv.textContent = "Statut : " + msg; }
 function setError(msg) { errorDiv.textContent = msg ? "⚠️ " + msg : ""; }
 
@@ -954,7 +987,7 @@ async function startBabyphone() {
 				setStatus("QR code prêt — faites-le scanner par le Récepteur.");
 			}
 			show("offerSection");
-			show("pasteAnswerSection");
+			openModal("offerQrModal");
 			initQrSwipeSupport();
 		} else {
 			await requestWakeLock();
@@ -964,6 +997,7 @@ async function startBabyphone() {
 				await processIncomingOffer(incomingOffer);
 			} else {
 				show("scanOfferSection");
+				openModal("scanOfferModal");
 				setStatus("Aucune offre détectée. Scannez le QR de l'Émetteur.");
 			}
 		}
@@ -1044,6 +1078,7 @@ async function processIncomingOffer(offer) {
 		}
 
 		show("answerSection");
+		openModal("answerQrModal");
 		initQrSwipeSupport();
 		setError("");
 	} catch (e) {
@@ -1080,7 +1115,7 @@ async function processAnswer() {
 			saveConnectionData(peerConnection.localDescription, answer);
 		}
 
-		hide("pasteAnswerSection");
+		closeModal("scanAnswerModal");
 		setStatus("Connexion en cours… En attente de l'audio.");
 		setError("");
 	} catch (e) {
@@ -1124,6 +1159,7 @@ async function startScanOffer() {
 					setError("❌ Mauvais QR code ! Vous avez scanné le QR de partage de page. Scannez le QR code de l'Émetteur (affiché sur son appareil).");
 					await stopScanOffer();
 					show("scanOfferSection");
+					openModal("scanOfferModal");
 					return;
 				}
 
@@ -1136,7 +1172,7 @@ async function startScanOffer() {
 					} else if (scanResult && scanResult !== true) {
 						// We have all parts, reconstruct the URL
 						await stopScanOffer();
-						hide("scanOfferSection");
+						closeModal("scanOfferModal");
 						const fullUrl = pageUrl + "#sdp=" + scanResult;
 						try {
 							const offer = await sdpFromUrl(fullUrl);
@@ -1146,10 +1182,12 @@ async function startScanOffer() {
 							} else {
 								setError("QR code invalide.");
 								show("scanOfferSection");
+								openModal("scanOfferModal");
 							}
 						} catch (e) {
 							setError("Erreur lors du scan : " + e.message);
 							show("scanOfferSection");
+							openModal("scanOfferModal");
 						}
 					}
 					return;
@@ -1160,11 +1198,12 @@ async function startScanOffer() {
 					setError("❌ Mauvais QR code ! Scannez le QR code de l'Émetteur (affiché sur son appareil).");
 					await stopScanOffer();
 					show("scanOfferSection");
+					openModal("scanOfferModal");
 					return;
 				}
 
 				await stopScanOffer();
-				hide("scanOfferSection");
+				closeModal("scanOfferModal");
 				try {
 					const offer = await sdpFromUrl(decodedText);
 					if (offer) {
@@ -1173,10 +1212,12 @@ async function startScanOffer() {
 					} else {
 						setError("QR code invalide.");
 						show("scanOfferSection");
+						openModal("scanOfferModal");
 					}
 				} catch (e) {
 					setError("Erreur lors du scan : " + e.message);
 					show("scanOfferSection");
+					openModal("scanOfferModal");
 				}
 			},
 			{
@@ -1291,6 +1332,12 @@ function stopBabyphone() {
 	resetPartialScans();
 	document.getElementById("qrNavigation").style.display = "none";
 	document.getElementById("offerQrNavigation").style.display = "none";
+
+	// Close all modals
+	closeModal("offerQrModal");
+	closeModal("scanOfferModal");
+	closeModal("answerQrModal");
+	closeModal("scanAnswerModal");
 
 	["offerSection", "scanOfferSection", "answerSection", "pasteAnswerSection"].forEach(hide);
 	setStatus("Arrêté");
