@@ -1010,6 +1010,7 @@ async function startBabyphone() {
 			} else {
 				show("scanOfferSection");
 				openModal("scanOfferModal");
+				startScanOffer();
 				setStatus("Aucune offre détectée. Scannez le QR de l'Émetteur.");
 			}
 		}
