@@ -258,19 +258,22 @@
 			<label style="font-size: 0.9em; display: block; margin-bottom: 8px;">
 				<strong>Mode QR code :</strong>
 				<select id="splitModeOffer" style="width: auto; min-width: 150px; margin-left: 8px;">
-					<option value="2" selected>2 QR codes</option>
-					<option value="1">1 QR code (auto)</option>
+					<option value="auto" selected>Auto (recommandé)</option>
+					<option value="1">1 QR code</option>
+					<option value="2">2 QR codes</option>
 					<option value="3">3 QR codes</option>
 					<option value="4">4 QR codes</option>
-					<option value="5">5 QR codes</option>
-					<option value="6">6 QR codes</option>
-					<option value="7">7 QR codes</option>
-					<option value="8">8 QR codes</option>
 				</select>
 			</label>
 			<small style="color: #666; display: block; margin-top: 4px;">
 				Si le QR code est trop grand à scanner, sélectionnez plusieurs parties.
 			</small>
+			<div id="multiQrMessageOffer"
+				style="display: none; margin-top: 10px; padding: 10px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+				<strong>Mode multi-QR activé :</strong><br>
+				Plusieurs QR codes seront générés. Le récepteur doit les scanner <strong>tous</strong> (un par un) pour
+				reconstituer le lien complet.
+			</div>
 		</div>
 		<div id="offerQrNavigation" style="display: none; margin: 10px 0; text-align: center;">
 			<button id="prevOfferQrBtn" style="min-width: 50px; padding: 8px 12px;">←</button>
@@ -298,19 +301,22 @@
 			<label style="font-size: 0.9em; display: block; margin-bottom: 8px;">
 				<strong>Mode QR code :</strong>
 				<select id="splitMode" style="width: auto; min-width: 150px; margin-left: 8px;">
-					<option value="2" selected>2 QR codes</option>
-					<option value="1">1 QR code (auto)</option>
+					<option value="auto" selected>Auto (recommandé)</option>
+					<option value="1">1 QR code</option>
+					<option value="2">2 QR codes</option>
 					<option value="3">3 QR codes</option>
 					<option value="4">4 QR codes</option>
-					<option value="5">5 QR codes</option>
-					<option value="6">6 QR codes</option>
-					<option value="7">7 QR codes</option>
-					<option value="8">8 QR codes</option>
 				</select>
 			</label>
 			<small style="color: #666; display: block; margin-top: 4px;">
 				Si le QR code est trop grand à scanner, sélectionnez plusieurs parties.
 			</small>
+			<div id="multiQrMessage"
+				style="display: none; margin-top: 10px; padding: 10px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+				<strong>Mode multi-QR activé :</strong><br>
+				Plusieurs QR codes seront générés. L'émetteur doit les scanner <strong>tous</strong> (un par un) pour
+				reconstituer le lien complet.
+			</div>
 		</div>
 		<div id="qrNavigation" style="display: none; margin: 10px 0;">
 			<button id="prevQrBtn" style="min-width: 50px; padding: 8px 12px;">←</button>
@@ -780,41 +786,47 @@
 			if (!isStarted || !isEmetteur || !peerConnection || !peerConnection.localDescription) return;
 
 			const compressedOffer = await compress(JSON.stringify(peerConnection.localDescription));
-			const splitModeOffer = parseInt(document.getElementById("splitModeOffer").value);
+			const modeValue = document.getElementById("splitModeOffer").value;
+			const isAuto = modeValue === "auto";
+			const splitModeOffer = isAuto ? 1 : parseInt(modeValue);
 			const navDivOffer = document.getElementById("offerQrNavigation");
+			const multiMsgOffer = document.getElementById("multiQrMessageOffer");
 
-			if (splitModeOffer > 1) {
+			if (!isAuto && splitModeOffer > 1) {
+				// Manual multi-QR mode
 				offerQrParts = splitData(compressedOffer, splitModeOffer);
 				currentOfferQrIndex = 0;
 				updateOfferQrDisplay();
 				navDivOffer.style.display = "block";
+				multiMsgOffer.style.display = "block";
 				document.getElementById("shareOfferBtn").onclick = () => {
 					const baseUrl = location.href.split("#")[0] + "#sdp=";
 					shareOrCopy(baseUrl + offerQrParts.join(","), "Lien babyphone (toutes les parties)");
 				};
 				setStatus(`${offerQrParts.length} QR codes prêts — faites-les scanner un par un par le Récepteur.`);
+			} else if (isAuto && compressedOffer.length > 800) {
+				// Auto mode with large data
+				const autoParts = Math.ceil(compressedOffer.length / 600);
+				offerQrParts = splitData(compressedOffer, autoParts);
+				currentOfferQrIndex = 0;
+				updateOfferQrDisplay();
+				navDivOffer.style.display = "block";
+				multiMsgOffer.style.display = "block";
+				document.getElementById("shareOfferBtn").onclick = () => {
+					const baseUrl = location.href.split("#")[0] + "#sdp=";
+					shareOrCopy(baseUrl + offerQrParts.join(","), "Lien babyphone (toutes les parties)");
+				};
+				setStatus(`${offerQrParts.length} QR codes générés automatiquement (données volumineuses).`);
 			} else {
-				// Auto mode or single QR
-				if (compressedOffer.length > 800) {
-					const autoParts = Math.ceil(compressedOffer.length / 600);
-					offerQrParts = splitData(compressedOffer, autoParts);
-					currentOfferQrIndex = 0;
-					updateOfferQrDisplay();
-					navDivOffer.style.display = "block";
-					document.getElementById("shareOfferBtn").onclick = () => {
-						const baseUrl = location.href.split("#")[0] + "#sdp=";
-						shareOrCopy(baseUrl + offerQrParts.join(","), "Lien babyphone (toutes les parties)");
-					};
-					setStatus(`${offerQrParts.length} QR codes générés automatiquement (données volumineuses).`);
-				} else {
-					offerQrParts = [compressedOffer];
-					currentOfferQrIndex = 0;
-					updateOfferQrDisplay();
-					navDivOffer.style.display = "none";
-					const offerUrl = location.href.split("#")[0] + "#sdp=" + compressedOffer;
-					document.getElementById("shareOfferBtn").onclick = () => shareOrCopy(offerUrl, "Ouvre ce lien pour recevoir l'audio du babyphone");
-					setStatus("QR code prêt — faites-le scanner par le Récepteur.");
-				}
+				// Single QR code (manual 1 or auto with small data)
+				offerQrParts = [compressedOffer];
+				currentOfferQrIndex = 0;
+				updateOfferQrDisplay();
+				navDivOffer.style.display = "none";
+				multiMsgOffer.style.display = "none";
+				const offerUrl = location.href.split("#")[0] + "#sdp=" + compressedOffer;
+				document.getElementById("shareOfferBtn").onclick = () => shareOrCopy(offerUrl, "Ouvre ce lien pour recevoir l'audio du babyphone");
+				setStatus("QR code prêt — faites-le scanner par le Récepteur.");
 			}
 		}
 
@@ -823,40 +835,46 @@
 			if (!isStarted || isEmetteur || !peerConnection || !peerConnection.localDescription) return;
 
 			const compressedAnswer = await compress(JSON.stringify(peerConnection.localDescription));
-			const splitMode = parseInt(document.getElementById("splitMode").value);
+			const modeValue = document.getElementById("splitMode").value;
+			const isAuto = modeValue === "auto";
+			const splitMode = isAuto ? 1 : parseInt(modeValue);
 			const navDiv = document.getElementById("qrNavigation");
+			const multiMsg = document.getElementById("multiQrMessage");
 
-			if (splitMode > 1) {
+			if (!isAuto && splitMode > 1) {
+				// Manual multi-QR mode
 				answerQrParts = splitData(compressedAnswer, splitMode);
 				currentQrIndex = 0;
 				updateQrDisplay();
 				navDiv.style.display = "block";
+				multiMsg.style.display = "block";
 				document.getElementById("shareAnswerBtn").onclick = () => {
 					const combined = answerQrParts.join(",");
 					shareOrCopy(combined, "Réponse babyphone (toutes les parties)");
 				};
 				setStatus(`${answerQrParts.length} QR codes prêts — faites-les scanner un par un par l'Émetteur.`);
+			} else if (isAuto && compressedAnswer.length > 800) {
+				// Auto mode with large data
+				const autoParts = Math.ceil(compressedAnswer.length / 600);
+				answerQrParts = splitData(compressedAnswer, autoParts);
+				currentQrIndex = 0;
+				updateQrDisplay();
+				navDiv.style.display = "block";
+				multiMsg.style.display = "block";
+				document.getElementById("shareAnswerBtn").onclick = () => {
+					const combined = answerQrParts.join(",");
+					shareOrCopy(combined, "Réponse babyphone (toutes les parties)");
+				};
+				setStatus(`${answerQrParts.length} QR codes générés automatiquement (données volumineuses).`);
 			} else {
-				// Auto mode or single QR
-				if (compressedAnswer.length > 800) {
-					const autoParts = Math.ceil(compressedAnswer.length / 600);
-					answerQrParts = splitData(compressedAnswer, autoParts);
-					currentQrIndex = 0;
-					updateQrDisplay();
-					navDiv.style.display = "block";
-					document.getElementById("shareAnswerBtn").onclick = () => {
-						const combined = answerQrParts.join(",");
-						shareOrCopy(combined, "Réponse babyphone (toutes les parties)");
-					};
-					setStatus(`${answerQrParts.length} QR codes générés automatiquement (données volumineuses).`);
-				} else {
-					answerQrParts = [compressedAnswer];
-					currentQrIndex = 0;
-					updateQrDisplay();
-					navDiv.style.display = "none";
-					document.getElementById("shareAnswerBtn").onclick = () => shareOrCopy(compressedAnswer, "Réponse babyphone");
-					setStatus("QR code prêt — faites-le scanner par l'Émetteur.");
-				}
+				// Single QR code (manual 1 or auto with small data)
+				answerQrParts = [compressedAnswer];
+				currentQrIndex = 0;
+				updateQrDisplay();
+				navDiv.style.display = "none";
+				multiMsg.style.display = "none";
+				document.getElementById("shareAnswerBtn").onclick = () => shareOrCopy(compressedAnswer, "Réponse babyphone");
+				setStatus("QR code prêt — faites-le scanner par l'Émetteur.");
 			}
 		}
 
@@ -989,43 +1007,47 @@
 					const compressedOffer = offerUrl.split("#sdp=")[1];
 
 					// Get split mode preference for offer
-					const splitModeOffer = parseInt(document.getElementById("splitModeOffer").value);
+					const modeOfferValue = document.getElementById("splitModeOffer").value;
+					const isAutoOffer = modeOfferValue === "auto";
+					const splitModeOffer = isAutoOffer ? 1 : parseInt(modeOfferValue);
 					const navDivOffer = document.getElementById("offerQrNavigation");
+					const multiMsgOffer = document.getElementById("multiQrMessageOffer");
 
-					if (splitModeOffer > 1) {
-						// Split into multiple QR codes
+					if (!isAutoOffer && splitModeOffer > 1) {
+						// Manual multi-QR mode
 						offerQrParts = splitData(compressedOffer, splitModeOffer);
 						currentOfferQrIndex = 0;
 						updateOfferQrDisplay();
 						navDivOffer.style.display = "block";
+						multiMsgOffer.style.display = "block";
 						document.getElementById("shareOfferBtn").onclick = () => {
 							const baseUrl = location.href.split("#")[0] + "#sdp=";
 							shareOrCopy(baseUrl + offerQrParts.join(","), "Lien babyphone (toutes les parties)");
 						};
 						setStatus(`${offerQrParts.length} QR codes prêts — faites-les scanner un par un par le Récepteur.`);
+					} else if (isAutoOffer && compressedOffer.length > 800) {
+						// Auto mode with large data
+						const autoParts = Math.ceil(compressedOffer.length / 600);
+						offerQrParts = splitData(compressedOffer, autoParts);
+						currentOfferQrIndex = 0;
+						updateOfferQrDisplay();
+						navDivOffer.style.display = "block";
+						multiMsgOffer.style.display = "block";
+						document.getElementById("shareOfferBtn").onclick = () => {
+							const baseUrl = location.href.split("#")[0] + "#sdp=";
+							shareOrCopy(baseUrl + offerQrParts.join(","), "Lien babyphone (toutes les parties)");
+						};
+						setStatus(`${offerQrParts.length} QR codes générés automatiquement (données volumineuses).`);
 					} else {
-						// Auto mode: split if data is too large (>800 chars)
-						if (compressedOffer.length > 800) {
-							const autoParts = Math.ceil(compressedOffer.length / 600);
-							offerQrParts = splitData(compressedOffer, autoParts);
-							currentOfferQrIndex = 0;
-							updateOfferQrDisplay();
-							navDivOffer.style.display = "block";
-							document.getElementById("shareOfferBtn").onclick = () => {
-								const baseUrl = location.href.split("#")[0] + "#sdp=";
-								shareOrCopy(baseUrl + offerQrParts.join(","), "Lien babyphone (toutes les parties)");
-							};
-							setStatus(`${offerQrParts.length} QR codes générés automatiquement (données volumineuses).`);
-						} else {
-							// Single QR code
-							offerQrParts = [compressedOffer];
-							currentOfferQrIndex = 0;
-							updateOfferQrDisplay();
-							navDivOffer.style.display = "none";
-							makeQr("offerQr", offerUrl);
-							document.getElementById("shareOfferBtn").onclick = () => shareOrCopy(offerUrl, "Ouvre ce lien pour recevoir l'audio du babyphone");
-							setStatus("QR code prêt — faites-le scanner par le Récepteur.");
-						}
+						// Single QR code (manual 1 or auto with small data)
+						offerQrParts = [compressedOffer];
+						currentOfferQrIndex = 0;
+						updateOfferQrDisplay();
+						navDivOffer.style.display = "none";
+						multiMsgOffer.style.display = "none";
+						makeQr("offerQr", offerUrl);
+						document.getElementById("shareOfferBtn").onclick = () => shareOrCopy(offerUrl, "Ouvre ce lien pour recevoir l'audio du babyphone");
+						setStatus("QR code prêt — faites-le scanner par le Récepteur.");
 					}
 					show("offerSection");
 					show("pasteAnswerSection");
@@ -1068,15 +1090,19 @@
 				const compressedAnswer = await compress(JSON.stringify(peerConnection.localDescription));
 
 				// Get split mode preference
-				const splitMode = parseInt(document.getElementById("splitMode").value);
+				const modeValue = document.getElementById("splitMode").value;
+				const isAuto = modeValue === "auto";
+				const splitMode = isAuto ? 1 : parseInt(modeValue);
 				const navDiv = document.getElementById("qrNavigation");
+				const multiMsg = document.getElementById("multiQrMessage");
 
-				if (splitMode > 1) {
-					// Split into multiple QR codes
+				if (!isAuto && splitMode > 1) {
+					// Manual multi-QR mode
 					answerQrParts = splitData(compressedAnswer, splitMode);
 					currentQrIndex = 0;
 					updateQrDisplay();
 					navDiv.style.display = "block";
+					multiMsg.style.display = "block";
 
 					// Share button combines all parts
 					document.getElementById("shareAnswerBtn").onclick = () => {
@@ -1085,28 +1111,28 @@
 					};
 
 					setStatus(`${answerQrParts.length} QR codes prêts — faites-les scanner un par un par l'Émetteur.`);
+				} else if (isAuto && compressedAnswer.length > 800) {
+					// Auto mode with large data
+					const autoParts = Math.ceil(compressedAnswer.length / 600);
+					answerQrParts = splitData(compressedAnswer, autoParts);
+					currentQrIndex = 0;
+					updateQrDisplay();
+					navDiv.style.display = "block";
+					multiMsg.style.display = "block";
+					document.getElementById("shareAnswerBtn").onclick = () => {
+						const combined = answerQrParts.join(",");
+						shareOrCopy(combined, "Réponse babyphone (toutes les parties)");
+					};
+					setStatus(`${answerQrParts.length} QR codes générés automatiquement (données volumineuses).`);
 				} else {
-					// Auto mode: split if data is too large (>800 chars)
-					if (compressedAnswer.length > 800) {
-						const autoParts = Math.ceil(compressedAnswer.length / 600);
-						answerQrParts = splitData(compressedAnswer, autoParts);
-						currentQrIndex = 0;
-						updateQrDisplay();
-						navDiv.style.display = "block";
-						document.getElementById("shareAnswerBtn").onclick = () => {
-							const combined = answerQrParts.join(",");
-							shareOrCopy(combined, "Réponse babyphone (toutes les parties)");
-						};
-						setStatus(`${answerQrParts.length} QR codes générés automatiquement (données volumineuses).`);
-					} else {
-						// Single QR code
-						answerQrParts = [compressedAnswer];
-						currentQrIndex = 0;
-						updateQrDisplay();
-						navDiv.style.display = "none";
-						document.getElementById("shareAnswerBtn").onclick = () => shareOrCopy(compressedAnswer, "Réponse babyphone");
-						setStatus("QR code prêt — faites-le scanner par l'Émetteur.");
-					}
+					// Single QR code (manual 1 or auto with small data)
+					answerQrParts = [compressedAnswer];
+					currentQrIndex = 0;
+					updateQrDisplay();
+					navDiv.style.display = "none";
+					multiMsg.style.display = "none";
+					document.getElementById("shareAnswerBtn").onclick = () => shareOrCopy(compressedAnswer, "Réponse babyphone");
+					setStatus("QR code prêt — faites-le scanner par l'Émetteur.");
 				}
 
 				show("answerSection");
