@@ -382,6 +382,41 @@
 		let isScanningOffer = false;
 		let isScanningAnswer = false;
 
+		// Last connection data for quick reconnect
+		const LS_KEYS = {
+			ROLE: "babyphoneRole",
+			EMITTER_SDP: "babyphoneEmitterSdp",
+			RECEIVER_SDP: "babyphoneReceiverSdp",
+			LAST_CONNECTION: "babyphoneLastConnection",
+			DEVICE_NAME: "babyphoneDeviceName"
+		};
+
+		function saveConnectionData(emitterSdp, receiverSdp) {
+			const data = {
+				timestamp: Date.now(),
+				emitterSdp: emitterSdp,
+				receiverSdp: receiverSdp
+			};
+			localStorage.setItem(LS_KEYS.LAST_CONNECTION, JSON.stringify(data));
+		}
+
+		function getLastConnectionData() {
+			try {
+				const data = localStorage.getItem(LS_KEYS.LAST_CONNECTION);
+				if (!data) return null;
+				const parsed = JSON.parse(data);
+				// Valid for 10 minutes
+				const isValid = (Date.now() - parsed.timestamp) < 10 * 60 * 1000;
+				return isValid ? parsed : null;
+			} catch (e) {
+				return null;
+			}
+		}
+
+		function clearLastConnection() {
+			localStorage.removeItem(LS_KEYS.LAST_CONNECTION);
+		}
+
 		// QR code splitting variables
 		let answerQrParts = [];
 		let currentQrIndex = 0;
@@ -407,7 +442,7 @@
 		const roleSelect = document.getElementById("role");
 		const remoteAudio = document.getElementById("remoteAudio");
 
-		const savedRole = localStorage.getItem("babyphoneRole");
+		const savedRole = localStorage.getItem(LS_KEYS.ROLE);
 		if (savedRole) {
 			roleSelect.value = savedRole;
 			isEmetteur = savedRole === "emetteur";
@@ -417,9 +452,37 @@
 			}
 		}
 
+		// Check for last connection and show reconnect option
+		const lastConn = getLastConnectionData();
+		if (lastConn) {
+			const reconnectDiv = document.createElement("div");
+			reconnectDiv.id = "reconnectSection";
+			reconnectDiv.style.cssText = "margin: 16px auto; max-width: 500px; padding: 16px; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #2196F3;";
+			const minutesAgo = Math.floor((Date.now() - lastConn.timestamp) / 60000);
+			reconnectDiv.innerHTML = `
+				<div style="font-weight: bold; margin-bottom: 8px;">Connexion récente détectée</div>
+				<div style="font-size: 0.9em; color: #555; margin-bottom: 12px;">
+					Dernière connexion il y a ${minutesAgo} minute${minutesAgo > 1 ? 's' : ''}
+				</div>
+				<button id="reconnectBtn" style="background: #4CAF50; margin: 0;">Reconnecter rapidement</button>
+				<button id="newConnectionBtn" style="background: #757575; margin: 0 0 0 8px;">Nouvelle connexion</button>
+			`;
+			statusDiv.parentNode.insertBefore(reconnectDiv, statusDiv.nextSibling);
+
+			document.getElementById("reconnectBtn").addEventListener("click", () => {
+				hide("reconnectSection");
+				startQuickReconnect(lastConn);
+			});
+
+			document.getElementById("newConnectionBtn").addEventListener("click", () => {
+				clearLastConnection();
+				hide("reconnectSection");
+			});
+		}
+
 		roleSelect.addEventListener("change", () => {
 			isEmetteur = roleSelect.value === "emetteur";
-			localStorage.setItem("babyphoneRole", roleSelect.value);
+			localStorage.setItem(LS_KEYS.ROLE, roleSelect.value);
 			if (!isEmetteur && !isStarted) {
 				show("scanOfferSection");
 				setStatus("Prêt à scanner le QR de l'Émetteur.");
@@ -942,6 +1005,97 @@
 			return "pending";
 		}
 
+		async function startQuickReconnect(lastConn) {
+			setStatus("Tentative de reconnexion rapide...");
+			isEmetteur = roleSelect.value === "emetteur";
+
+			try {
+				peerConnection = new RTCPeerConnection(configuration);
+
+				peerConnection.onconnectionstatechange = () => {
+					const state = peerConnection.connectionState;
+					if (state === "connected") {
+						setStatus("Reconnexion réussie ! Audio actif.");
+						showToast("Reconnecté avec succès !");
+					} else if (state === "failed") {
+						setStatus("Reconnexion échouée — les données ont expiré.");
+						setTimeout(() => {
+							setStatus("Veuillez utiliser les QR codes pour une nouvelle connexion.");
+							stopBabyphone();
+							startBabyphone();
+						}, 2000);
+					}
+				};
+
+				peerConnection.ontrack = (event) => {
+					if (event.streams && event.streams[0]) {
+						remoteAudio.srcObject = event.streams[0];
+					} else {
+						const ms = new MediaStream();
+						ms.addTrack(event.track);
+						remoteAudio.srcObject = ms;
+					}
+					remoteAudio.play().catch(() => {
+						setStatus("Appuyez sur ▶ pour activer l'audio.");
+						showPlayButton();
+					});
+					setStatus("Audio reçu !");
+				};
+
+				if (isEmetteur) {
+					// Emitter: restore local description from stored offer
+					localStream = await navigator.mediaDevices.getUserMedia({
+						audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+						video: false
+					});
+					await requestWakeLock();
+					startSilentAudio();
+					startVuMeter(localStream);
+					localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+					if (lastConn.emitterSdp) {
+						await peerConnection.setLocalDescription(new RTCSessionDescription(lastConn.emitterSdp));
+						setStatus("Reprise de la connexion... Scannez la réponse du récepteur.");
+						show("pasteAnswerSection");
+						startBtn.disabled = true;
+						stopBtn.disabled = false;
+						roleSelect.disabled = true;
+						isStarted = true;
+					} else {
+						throw new Error("Données émetteur manquantes");
+					}
+				} else {
+					// Receiver: restore from stored answer
+					await requestWakeLock();
+					startSilentAudio();
+
+					if (lastConn.emitterSdp) {
+						// First set remote description (the emitter's offer)
+						await peerConnection.setRemoteDescription(new RTCSessionDescription(lastConn.emitterSdp));
+
+						// Then set local description (our answer)
+						if (lastConn.receiverSdp) {
+							await peerConnection.setLocalDescription(new RTCSessionDescription(lastConn.receiverSdp));
+							setStatus("Reconnexion en cours...");
+							startBtn.disabled = true;
+							stopBtn.disabled = false;
+							roleSelect.disabled = true;
+							isStarted = true;
+						} else {
+							throw new Error("Données réponse manquantes");
+						}
+					} else {
+						throw new Error("Données offre manquantes");
+					}
+				}
+			} catch (error) {
+				console.error("Quick reconnect failed:", error);
+				setStatus("Reconnexion rapide impossible — utilisation des QR codes.");
+				showToast("Données expirées, utilisez les QR codes");
+				setTimeout(() => startBabyphone(), 1500);
+			}
+		}
+
 		async function startBabyphone() {
 			if (isStarted) return;
 			isStarted = true;
@@ -1087,6 +1241,9 @@
 				await peerConnection.setLocalDescription(answer);
 				await waitForIceGathering(peerConnection);
 
+				// Save connection data for quick reconnect (receiver side)
+				saveConnectionData(offer, peerConnection.localDescription);
+
 				const compressedAnswer = await compress(JSON.stringify(peerConnection.localDescription));
 
 				// Get split mode preference
@@ -1165,6 +1322,12 @@
 					answer = JSON.parse(json);
 				}
 				await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+
+				// Save connection data for quick reconnect (emitter side)
+				if (peerConnection.localDescription) {
+					saveConnectionData(peerConnection.localDescription, answer);
+				}
+
 				hide("pasteAnswerSection");
 				setStatus("Connexion en cours… En attente de l'audio.");
 				setError("");
