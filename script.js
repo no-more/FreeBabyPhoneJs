@@ -199,7 +199,9 @@ if (location.hash.includes("sdp=")) {
 }
 
 function show(id) {
-	document.getElementById(id).classList.remove("hidden");
+	const el = document.getElementById(id);
+	el.classList.remove("hidden");
+	el.style.display = "block";
 }
 function hide(id) {
 	document.getElementById(id).classList.add("hidden");
