@@ -125,10 +125,6 @@ startBtn.addEventListener("click", startBabyphone);
 stopBtn.addEventListener("click", stopBabyphone);
 document.getElementById("processAnswerBtn").addEventListener("click", processAnswer);
 
-document.getElementById("startScanOfferBtn").addEventListener("click", startScanOffer);
-document.getElementById("stopScanOfferBtn").addEventListener("click", stopScanOffer);
-document.getElementById("startScanAnswerBtn").addEventListener("click", startScanAnswer);
-document.getElementById("stopScanAnswerBtn").addEventListener("click", stopScanAnswer);
 document.getElementById("prevQrBtn").addEventListener("click", showPrevQr);
 document.getElementById("nextQrBtn").addEventListener("click", showNextQr);
 document.getElementById("prevOfferQrBtn").addEventListener("click", showPrevOfferQr);
@@ -140,14 +136,20 @@ document.getElementById("splitMode").addEventListener("change", regenerateAnswer
 // Modal open/close event listeners
 document.getElementById("showOfferQrBtn").addEventListener("click", () => openModal("offerQrModal"));
 document.getElementById("closeOfferQrModal").addEventListener("click", () => closeModal("offerQrModal"));
-document.getElementById("showScanOfferBtn").addEventListener("click", () => openModal("scanOfferModal"));
+document.getElementById("showScanOfferBtn").addEventListener("click", () => {
+	openModal("scanOfferModal");
+	startScanOffer();
+});
 document.getElementById("closeScanOfferModal").addEventListener("click", () => {
 	closeModal("scanOfferModal");
 	if (isScanningOffer) stopScanOffer();
 });
 document.getElementById("showAnswerQrBtn").addEventListener("click", () => openModal("answerQrModal"));
 document.getElementById("closeAnswerQrModal").addEventListener("click", () => closeModal("answerQrModal"));
-document.getElementById("showScanAnswerBtn").addEventListener("click", () => openModal("scanAnswerModal"));
+document.getElementById("showScanAnswerBtn").addEventListener("click", () => {
+	openModal("scanAnswerModal");
+	startScanAnswer();
+});
 document.getElementById("closeScanAnswerModal").addEventListener("click", () => {
 	closeModal("scanAnswerModal");
 	if (isScanningAnswer) stopScanAnswer();
