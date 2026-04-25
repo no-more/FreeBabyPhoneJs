@@ -852,6 +852,8 @@ async function startQuickReconnect(lastConn) {
 			if (state === "connected") {
 				setStatus("Reconnexion réussie ! Audio actif.");
 				showToast("Reconnecté avec succès !");
+				hide("scanOfferDoneSection");
+				hide("answerSection");
 			} else if (state === "failed") {
 				setStatus("Reconnexion échouée — les données ont expiré.");
 				setTimeout(() => {
@@ -951,6 +953,8 @@ async function startBabyphone() {
 			const state = peerConnection.connectionState;
 			if (state === "connected") {
 				setStatus("Connexion établie ! Audio actif.");
+				hide("scanOfferDoneSection");
+				hide("answerSection");
 			} else if (state === "failed") {
 				setStatus("Connexion perdue — nouvelle tentative…");
 				peerConnection.restartIce();
@@ -1151,6 +1155,8 @@ async function processIncomingOffer(offer) {
 			setStatus("QR code prêt — faites-le scanner par l'Émetteur.");
 		}
 
+		hide("scanOfferSection");
+		show("scanOfferDoneSection");
 		show("answerSection");
 		openModal("answerQrModal");
 		initQrSwipeSupport();
