@@ -407,3 +407,10 @@ video#readerAnswer {
 	background: #4CAF50;
 	width: 100%;
 }
+
+.swipe-hint {
+	margin-top: 12px;
+	font-size: 0.8em;
+	color: #888;
+	text-align: center;
+}
