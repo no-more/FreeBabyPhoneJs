@@ -452,15 +452,16 @@ function parsePartialQr(text) {
 // Update QR code display with navigation
 function updateQrDisplay() {
 	const container = document.getElementById("answerQr");
-	container.innerHTML = "";
 	if (answerQrParts.length === 0) return;
 
 	const part = answerQrParts[currentQrIndex];
-	const screenWidth = window.innerWidth;
-	const margin = 32;
-	const availableWidth = screenWidth - margin;
+	const modalContent = document.getElementById("answerQrModal").querySelector(".modal-content");
+	const modalWidth = modalContent ? modalContent.offsetWidth : window.innerWidth;
+	const padding = 20;
+	const availableWidth = modalWidth - padding;
 	const qrSize = Math.min(600, Math.max(250, availableWidth));
 
+	container.innerHTML = "";
 	const canvas = document.createElement("canvas");
 	container.appendChild(canvas);
 	drawQrToCanvas(canvas, part, qrSize);
@@ -495,7 +496,6 @@ function showNextQr() {
 
 function updateOfferQrDisplay() {
 	const container = document.getElementById("offerQr");
-	container.innerHTML = "";
 	if (offerQrParts.length === 0) return;
 
 	const part = offerQrParts[currentOfferQrIndex];
@@ -505,6 +505,7 @@ function updateOfferQrDisplay() {
 	const availableWidth = modalWidth - padding;
 	const qrSize = Math.min(600, Math.max(250, availableWidth));
 
+	container.innerHTML = "";
 	const canvas = document.createElement("canvas");
 	container.appendChild(canvas);
 	drawQrToCanvas(canvas, part, qrSize);
