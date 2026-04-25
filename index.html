@@ -5,7 +5,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 	<title>Babyphone WebRTC</title>
-	<script src="https://unpkg.com/qrcode@1.5.4"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
 	<style>
 		* {
@@ -445,7 +445,7 @@
 			el.innerHTML = "";
 			const canvas = document.createElement("canvas");
 			el.appendChild(canvas);
-			QRCode.toCanvas(canvas, pageUrl, { width: 160, errorCorrectionLevel: "M" });
+			drawQrToCanvas(canvas, pageUrl, 160);
 		})();
 
 		// Auto-start récepteur si l'URL contient déjà une offre
@@ -572,6 +572,30 @@
 			}
 		}
 
+		function drawQrToCanvas(canvas, text, size) {
+			const qr = qrcode(0, 'M');
+			qr.addData(text);
+			qr.make();
+			const cellCount = qr.getModuleCount();
+			const cellSize = Math.floor(size / cellCount);
+			const actualSize = cellSize * cellCount;
+			canvas.width = actualSize;
+			canvas.height = actualSize;
+			const ctx = canvas.getContext('2d');
+			ctx.fillStyle = '#ffffff';
+			ctx.fillRect(0, 0, actualSize, actualSize);
+			ctx.fillStyle = '#000000';
+			for (let row = 0; row < cellCount; row++) {
+				for (let col = 0; col < cellCount; col++) {
+					if (qr.isDark(row, col)) {
+						ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
+					}
+				}
+			}
+			// Center the canvas if needed by setting display style
+			canvas.style.display = 'block';
+		}
+
 		function makeQr(containerId, url) {
 			const el = document.getElementById(containerId);
 			el.innerHTML = "";
@@ -581,7 +605,7 @@
 			const qrSize = Math.min(600, Math.max(250, availableWidth));
 			const canvas = document.createElement("canvas");
 			el.appendChild(canvas);
-			QRCode.toCanvas(canvas, url, { width: qrSize, errorCorrectionLevel: "M" });
+			drawQrToCanvas(canvas, url, qrSize);
 		}
 
 		function shareOrCopy(url, label) {
@@ -663,7 +687,7 @@
 
 			const canvas = document.createElement("canvas");
 			container.appendChild(canvas);
-			QRCode.toCanvas(canvas, part, { width: qrSize, errorCorrectionLevel: "M" });
+			drawQrToCanvas(canvas, part, qrSize);
 
 			// Update counter
 			document.getElementById("qrCounter").textContent = `${currentQrIndex + 1} / ${answerQrParts.length}`;
@@ -700,7 +724,7 @@
 
 			const canvas = document.createElement("canvas");
 			container.appendChild(canvas);
-			QRCode.toCanvas(canvas, part, { width: qrSize, errorCorrectionLevel: "M" });
+			drawQrToCanvas(canvas, part, qrSize);
 
 			document.getElementById("offerQrCounter").textContent = `${currentOfferQrIndex + 1} / ${offerQrParts.length}`;
 			document.getElementById("prevOfferQrBtn").disabled = currentOfferQrIndex === 0;
