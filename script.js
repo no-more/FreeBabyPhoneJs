@@ -960,11 +960,14 @@ async function startBabyphone() {
 		};
 
 		peerConnection.ontrack = (event) => {
+			let receivedStream;
 			if (event.streams && event.streams[0]) {
-				remoteAudio.srcObject = event.streams[0];
+				receivedStream = event.streams[0];
+				remoteAudio.srcObject = receivedStream;
 			} else {
 				const ms = new MediaStream();
 				ms.addTrack(event.track);
+				receivedStream = ms;
 				remoteAudio.srcObject = ms;
 			}
 			remoteAudio.play().catch(() => {
@@ -973,6 +976,8 @@ async function startBabyphone() {
 			});
 			setStatus("Audio reçu !");
 			muteBtn.classList.remove("hidden");
+			// Start VU meter for received audio (works even when muted)
+			startVuMeter(receivedStream);
 		};
 
 		if (isEmetteur) {
