@@ -253,6 +253,8 @@ select {
 #qrNavigation,
 #offerQrNavigation {
 	display: none;
+	flex-direction: row;
+	gap: 1em;
 	margin: 10px 0;
 	text-align: center;
 }
@@ -372,6 +374,9 @@ video#readerAnswer {
 	max-height: 90vh;
 	overflow-y: auto;
 	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 1em;
 }
 
 .close-modal {

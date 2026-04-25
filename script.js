@@ -637,7 +637,7 @@ async function regenerateOfferQrCodes() {
 		offerQrParts = splitData(compressedOffer, splitModeOffer);
 		currentOfferQrIndex = 0;
 		updateOfferQrDisplay();
-		navDivOffer.style.display = "block";
+		navDivOffer.style.display = "flex";
 		multiMsgOffer.style.display = "block";
 		document.getElementById("shareOfferBtn").onclick = () => {
 			const baseUrl = location.href.split("#")[0] + "#sdp=";
@@ -686,7 +686,7 @@ async function regenerateAnswerQrCodes() {
 		answerQrParts = splitData(compressedAnswer, splitMode);
 		currentQrIndex = 0;
 		updateQrDisplay();
-		navDiv.style.display = "block";
+		navDiv.style.display = "flex";
 		multiMsg.style.display = "block";
 		document.getElementById("shareAnswerBtn").onclick = () => {
 			const combined = answerQrParts.join(",");
@@ -949,7 +949,7 @@ async function startBabyphone() {
 				offerQrParts = splitData(compressedOffer, splitModeOffer);
 				currentOfferQrIndex = 0;
 				updateOfferQrDisplay();
-				navDivOffer.style.display = "block";
+				navDivOffer.style.display = "flex";
 				multiMsgOffer.style.display = "block";
 				document.getElementById("shareOfferBtn").onclick = () => {
 					const baseUrl = location.href.split("#")[0] + "#sdp=";
@@ -1037,7 +1037,7 @@ async function processIncomingOffer(offer) {
 			answerQrParts = splitData(compressedAnswer, splitMode);
 			currentQrIndex = 0;
 			updateQrDisplay();
-			navDiv.style.display = "block";
+			navDiv.style.display = "flex";
 			multiMsg.style.display = "block";
 
 			// Share button combines all parts
