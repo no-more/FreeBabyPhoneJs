@@ -361,9 +361,23 @@ function drawQrToCanvas(canvas, text, size) {
 function makeQr(containerId, url) {
 	const el = document.getElementById(containerId);
 	el.innerHTML = "";
-	const screenWidth = window.innerWidth;
-	const margin = 32; // 16px padding on each side
-	const availableWidth = screenWidth - margin;
+
+	// Check if container is inside a modal
+	const modal = el.closest('.modal-content');
+	let availableWidth;
+
+	if (modal) {
+		// Use modal width if inside a modal
+		const modalWidth = modal.offsetWidth;
+		const padding = 20;
+		availableWidth = modalWidth - padding;
+	} else {
+		// Use screen width if not in a modal
+		const screenWidth = window.innerWidth;
+		const margin = 32; // 16px padding on each side
+		availableWidth = screenWidth - margin;
+	}
+
 	const qrSize = Math.min(600, Math.max(250, availableWidth));
 	const canvas = document.createElement("canvas");
 	el.appendChild(canvas);
@@ -485,9 +499,10 @@ function updateOfferQrDisplay() {
 	if (offerQrParts.length === 0) return;
 
 	const part = offerQrParts[currentOfferQrIndex];
-	const screenWidth = window.innerWidth;
-	const margin = 32;
-	const availableWidth = screenWidth - margin;
+	const modalContent = document.getElementById("offerQrModal").querySelector(".modal-content");
+	const modalWidth = modalContent ? modalContent.offsetWidth : window.innerWidth;
+	const padding = 20;
+	const availableWidth = modalWidth - padding;
 	const qrSize = Math.min(600, Math.max(250, availableWidth));
 
 	const canvas = document.createElement("canvas");
@@ -1336,3 +1351,4 @@ function stopBabyphone() {
 	["offerSection", "scanOfferSection", "answerSection", "pasteAnswerSection"].forEach(hide);
 	setStatus("Arrêté");
 }
+
