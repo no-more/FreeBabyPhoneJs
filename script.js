@@ -5,6 +5,7 @@ let isStarted = false;
 let wakeLock = null;
 let silentAudioCtx = null;
 let vuAnimFrame = null;
+let heartbeatInterval = null;
 
 let qrScannerOffer = null;
 let qrScannerAnswer = null;
@@ -198,6 +199,19 @@ if (location.hash.includes("sdp=")) {
 	window.addEventListener("load", () => startBabyphone(), { once: true });
 }
 
+// Handle visibility change to keep connection alive
+document.addEventListener("visibilitychange", async () => {
+	if (document.visibilityState === "visible") {
+		console.log("Page became visible");
+		await reRequestWakeLock();
+		await keepAudioContextAlive();
+		ensureMicTrackEnabled();
+	} else {
+		console.log("Page became hidden");
+		ensureMicTrackEnabled();
+	}
+});
+
 function show(id) {
 	document.getElementById(id).classList.remove("hidden");
 }
@@ -238,10 +252,31 @@ async function requestWakeLock() {
 	if ("wakeLock" in navigator) {
 		try {
 			wakeLock = await navigator.wakeLock.request("screen");
-			wakeLock.addEventListener("release", async () => {
-				if (isStarted) wakeLock = await navigator.wakeLock.request("screen").catch(() => null);
+			console.log("Wake lock acquired");
+			wakeLock.addEventListener("release", () => {
+				console.log("Wake lock released");
+				wakeLock = null;
 			});
-		} catch (e) { }
+		} catch (e) {
+			console.error("Wake lock failed:", e);
+		}
+	}
+}
+
+async function reRequestWakeLock() {
+	if (isStarted && "wakeLock" in navigator) {
+		try {
+			if (!wakeLock) {
+				wakeLock = await navigator.wakeLock.request("screen");
+				console.log("Wake lock re-acquired");
+				wakeLock.addEventListener("release", () => {
+					console.log("Wake lock released");
+					wakeLock = null;
+				});
+			}
+		} catch (e) {
+			console.error("Wake lock re-acquisition failed:", e);
+		}
 	}
 }
 
@@ -254,7 +289,56 @@ function startSilentAudio() {
 		oscillator.connect(gain);
 		gain.connect(silentAudioCtx.destination);
 		oscillator.start();
-	} catch (e) { }
+		console.log("Silent audio started");
+	} catch (e) {
+		console.error("Silent audio failed:", e);
+	}
+}
+
+async function keepAudioContextAlive() {
+	if (silentAudioCtx && silentAudioCtx.state === 'suspended') {
+		try {
+			await silentAudioCtx.resume();
+			console.log("Audio context resumed");
+		} catch (e) {
+			console.error("Failed to resume audio context:", e);
+		}
+	}
+}
+
+function ensureMicTrackEnabled() {
+	if (localStream && isEmetteur) {
+		localStream.getAudioTracks().forEach(track => {
+			if (!track.enabled) {
+				track.enabled = true;
+				console.log("Microphone track re-enabled");
+			}
+		});
+	}
+}
+
+function startHeartbeat() {
+	if (heartbeatInterval) clearInterval(heartbeatInterval);
+	heartbeatInterval = setInterval(() => {
+		if (isStarted) {
+			keepAudioContextAlive();
+			ensureMicTrackEnabled();
+			if (peerConnection && peerConnection.connectionState === 'connected') {
+				peerConnection.getStats().then(stats => {
+					console.log("Connection stats:", stats);
+				}).catch(() => { });
+			}
+		}
+	}, 10000); // Check every 10 seconds
+	console.log("Heartbeat started");
+}
+
+function stopHeartbeat() {
+	if (heartbeatInterval) {
+		clearInterval(heartbeatInterval);
+		heartbeatInterval = null;
+		console.log("Heartbeat stopped");
+	}
 }
 
 function stopSilentAudio() {
@@ -959,6 +1043,7 @@ async function startBabyphone() {
 				hide("answerSection");
 				hide("offerDoneSection");
 				hide("pasteAnswerSection");
+				startHeartbeat();
 			} else if (state === "failed") {
 				setStatus("Connexion perdue — nouvelle tentative…");
 				peerConnection.restartIce();
@@ -1413,6 +1498,7 @@ function stopBabyphone() {
 	muteMicBtn.textContent = "🎤 Micro activé";
 
 	stopVuMeter();
+	stopHeartbeat();
 	if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
 	if (peerConnection) { peerConnection.close(); peerConnection = null; }
 	remoteAudio.srcObject = null;
