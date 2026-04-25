@@ -175,7 +175,7 @@ document.getElementById("closeScanAnswerModal").addEventListener("click", () => 
 // Close modals when clicking outside
 window.addEventListener("click", (e) => {
 	if (e.target.classList.contains("modal")) {
-		e.target.classList.remove("open");
+		e.target.classList.add("hidden");
 		if (isScanningOffer && e.target.id === "scanOfferModal") stopScanOffer();
 		if (isScanningAnswer && e.target.id === "scanAnswerModal") stopScanAnswer();
 	}
@@ -207,7 +207,7 @@ function hide(id) {
 
 function openModal(modalId) {
 	const modal = document.getElementById(modalId);
-	modal.classList.add("open");
+	modal.classList.remove("hidden");
 	// Recalculate QR size after modal is rendered
 	requestAnimationFrame(() => {
 		requestAnimationFrame(() => {
@@ -217,7 +217,7 @@ function openModal(modalId) {
 }
 
 function closeModal(modalId) {
-	document.getElementById(modalId).classList.remove("open");
+	document.getElementById(modalId).classList.add("hidden");
 }
 
 function setStatus(msg) { statusDiv.textContent = "Statut : " + msg; }
