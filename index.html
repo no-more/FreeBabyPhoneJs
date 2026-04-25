@@ -45,10 +45,10 @@
 	<div class="sdp-section" id="offerSection">
 		<div class="step-hint"> <strong>Étape 1 (Émetteur) :</strong> Faites scanner ce(s) QR code(s) par le Récepteur.
 		</div>
-		<div id="splitControlsOffer" style="margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 6px;">
-			<label style="font-size: 0.9em; display: block; margin-bottom: 8px;">
+		<div id="splitControlsOffer">
+			<label>
 				<strong>Mode QR code :</strong>
-				<select id="splitModeOffer" style="width: auto; min-width: 150px; margin-left: 8px;">
+				<select id="splitModeOffer">
 					<option value="auto" selected>Auto (recommandé)</option>
 					<option value="1">1 QR code</option>
 					<option value="2">2 QR codes</option>
@@ -56,30 +56,29 @@
 					<option value="4">4 QR codes</option>
 				</select>
 			</label>
-			<small style="color: #666; display: block; margin-top: 4px;">
+			<small>
 				Si le QR code est trop grand à scanner, sélectionnez plusieurs parties.
 			</small>
-			<div id="multiQrMessageOffer"
-				style="display: none; margin-top: 10px; padding: 10px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+			<div id="multiQrMessageOffer">
 				<strong>Mode multi-QR activé :</strong><br>
 				Plusieurs QR codes seront générés. Le récepteur doit les scanner <strong>tous</strong> (un par un) pour
 				reconstituer le lien complet.
 			</div>
 		</div>
-		<div id="offerQrNavigation" style="display: none; margin: 10px 0; text-align: center;">
-			<button id="prevOfferQrBtn" style="min-width: 50px; padding: 8px 12px;">←</button>
-			<span id="offerQrCounter" style="margin: 0 15px; font-weight: bold;">1 / 1</span>
-			<button id="nextOfferQrBtn" style="min-width: 50px; padding: 8px 12px;">→</button>
+		<div id="offerQrNavigation">
+			<button id="prevOfferQrBtn">←</button>
+			<span id="offerQrCounter">1 / 1</span>
+			<button id="nextOfferQrBtn">→</button>
 		</div>
 		<div class="qr-container" id="offerQr"></div>
 		<button id="shareOfferBtn"> Partager le lien (alt.)</button>
 	</div>
 
 	<!-- Étape 1b (Récepteur) : Scanner le QR de l'Émetteur -->
-	<div class="sdp-section" id="scanOfferSection" style="display: none;">
+	<div class="sdp-section" id="scanOfferSection">
 		<div class="step-hint"> <strong>Étape 1 (Récepteur) :</strong> Scannez le QR code de l'Émetteur avec la caméra.
 		</div>
-		<video id="reader" style="width:100%; max-width:550px; border-radius:8px;"></video>
+		<video id="reader"></video>
 		<button id="startScanOfferBtn" class="camera-btn">📷 Démarrer le scanner</button>
 		<button id="stopScanOfferBtn" class="camera-btn" disabled>Arrêter le scanner</button>
 	</div>
@@ -88,10 +87,10 @@
 	<div class="sdp-section" id="answerSection">
 		<div class="step-hint"> <strong>Étape 2 (Récepteur) :</strong> Faites scanner ce(s) QR code(s) par l'Émetteur.
 		</div>
-		<div id="splitControls" style="margin: 10px 0; padding: 10px; background: #f5f5f5; border-radius: 6px;">
-			<label style="font-size: 0.9em; display: block; margin-bottom: 8px;">
+		<div id="splitControls">
+			<label>
 				<strong>Mode QR code :</strong>
-				<select id="splitMode" style="width: auto; min-width: 150px; margin-left: 8px;">
+				<select id="splitMode">
 					<option value="auto" selected>Auto (recommandé)</option>
 					<option value="1">1 QR code</option>
 					<option value="2">2 QR codes</option>
@@ -99,20 +98,19 @@
 					<option value="4">4 QR codes</option>
 				</select>
 			</label>
-			<small style="color: #666; display: block; margin-top: 4px;">
+			<small>
 				Si le QR code est trop grand à scanner, sélectionnez plusieurs parties.
 			</small>
-			<div id="multiQrMessage"
-				style="display: none; margin-top: 10px; padding: 10px; background: #fff3e0; border-left: 4px solid #ff9800; border-radius: 0 6px 6px 0; font-size: 0.9em;">
+			<div id="multiQrMessage">
 				<strong>Mode multi-QR activé :</strong><br>
 				Plusieurs QR codes seront générés. L'émetteur doit les scanner <strong>tous</strong> (un par un) pour
 				reconstituer le lien complet.
 			</div>
 		</div>
-		<div id="qrNavigation" style="display: none; margin: 10px 0;">
-			<button id="prevQrBtn" style="min-width: 50px; padding: 8px 12px;">←</button>
-			<span id="qrCounter" style="margin: 0 15px; font-weight: bold;">1 / 1</span>
-			<button id="nextQrBtn" style="min-width: 50px; padding: 8px 12px;">→</button>
+		<div id="qrNavigation">
+			<button id="prevQrBtn">←</button>
+			<span id="qrCounter">1 / 1</span>
+			<button id="nextQrBtn">→</button>
 		</div>
 		<div class="qr-container" id="answerQr"></div>
 		<button id="shareAnswerBtn"> Partager le lien (alt.)</button>
@@ -123,36 +121,34 @@
 		<div class="step-hint"> <strong>Étape 3 (Émetteur) :</strong> Scannez le(s) QR du Récepteur avec l'appareil
 			photo.
 			Si plusieurs QR codes sont affichés, scannez-les tous.</div>
-		<div id="partialScanStatus"
-			style="display: none; margin: 10px 0; padding: 10px; background: #e3f2fd; border-radius: 6px; border-left: 4px solid #2196F3;">
+		<div id="partialScanStatus">
 			<strong>Progression :</strong> <span id="partialScanCount">0</span> partie(s) scannée(s)
-			<div id="partialScanParts" style="margin-top: 6px; font-size: 0.85em; color: #555;"></div>
-			<button id="resetPartialScanBtn"
-				style="margin-top: 8px; padding: 6px 12px; font-size: 0.85em; background: #ff9800;">Réinitialiser</button>
+			<div id="partialScanParts"></div>
+			<button id="resetPartialScanBtn">Réinitialiser</button>
 		</div>
-		<div style="margin-bottom: 12px;">
-			<p style="font-size: 0.85em; color: #666;">Option 1 : Scanner directement avec la caméra</p>
-			<video id="readerAnswer" style="width:100%; max-width:550px; border-radius:8px;"></video>
+		<div class="mb-12">
+			<p class="hint-text">Option 1 : Scanner directement avec la caméra</p>
+			<video id="readerAnswer"></video>
 			<button id="startScanAnswerBtn" class="camera-btn">📷 Scanner le QR du Récepteur</button>
 			<button id="stopScanAnswerBtn" class="camera-btn" disabled>Arrêter le scanner</button>
 		</div>
-		<div style="margin-top: 16px; border-top: 1px solid #ddd; padding-top: 12px;">
-			<p style="font-size: 0.85em; color: #666;">Option 2 : Coller manuellement le lien (toutes les parties)</p>
+		<div class="mt-16 border-top pt-12">
+			<p class="hint-text">Option 2 : Coller manuellement le lien (toutes les parties)</p>
 			<textarea id="answerInput"
 				placeholder="Collez ici le lien scanné (ou toutes les parties séparées par des virgules)…"></textarea>
 			<button id="processAnswerBtn"> Connecter</button>
 		</div>
 	</div>
 
-	<audio id="remoteAudio" autoplay playsinline style="display:none"></audio>
+	<audio id="remoteAudio" autoplay playsinline></audio>
 
 	<div id="pageShareSection">
 		<p>📲 Partager cet outil</p>
 		<div id="pageQr"></div>
 	</div>
 
-	<div id="versionInfo" style="margin: 20px auto 0; max-width: 500px; padding-top: 16px; border-top: 1px solid #ddd;">
-		<p style="font-size: 0.75em; color: #999; margin: 0;">
+	<div id="versionInfo">
+		<p>
 			Version: <span id="commitHash">--COMMIT_HASH--</span><br>
 			Déployé: <span id="deployDate">--DEPLOY_DATE--</span>
 		</p>

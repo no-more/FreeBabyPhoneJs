@@ -206,3 +206,144 @@ select {
 .camera-btn:disabled {
 	background: #aaa;
 }
+
+/* Split controls panels */
+#splitControls,
+#splitControlsOffer {
+	margin: 10px 0;
+	padding: 10px;
+	background: #f5f5f5;
+	border-radius: 6px;
+}
+
+#splitControls label,
+#splitControlsOffer label {
+	font-size: 0.9em;
+	display: block;
+	margin-bottom: 8px;
+}
+
+#splitMode,
+#splitModeOffer {
+	width: auto;
+	min-width: 150px;
+	margin-left: 8px;
+}
+
+#splitControls small,
+#splitControlsOffer small {
+	color: #666;
+	display: block;
+	margin-top: 4px;
+}
+
+/* Multi QR messages */
+#multiQrMessage,
+#multiQrMessageOffer {
+	display: none;
+	margin-top: 10px;
+	padding: 10px;
+	background: #fff3e0;
+	border-left: 4px solid #ff9800;
+	border-radius: 0 6px 6px 0;
+	font-size: 0.9em;
+}
+
+/* QR Navigation */
+#qrNavigation,
+#offerQrNavigation {
+	display: none;
+	margin: 10px 0;
+	text-align: center;
+}
+
+#prevQrBtn,
+#nextQrBtn,
+#prevOfferQrBtn,
+#nextOfferQrBtn {
+	min-width: 50px;
+	padding: 8px 12px;
+}
+
+#qrCounter,
+#offerQrCounter {
+	margin: 0 15px;
+	font-weight: bold;
+}
+
+/* Video elements */
+video#reader,
+video#readerAnswer {
+	width: 100%;
+	max-width: 550px;
+	border-radius: 8px;
+}
+
+/* Partial scan status */
+#partialScanStatus {
+	display: none;
+	margin: 10px 0;
+	padding: 10px;
+	background: #e3f2fd;
+	border-radius: 6px;
+	border-left: 4px solid #2196F3;
+}
+
+#partialScanParts {
+	margin-top: 6px;
+	font-size: 0.85em;
+	color: #555;
+}
+
+#resetPartialScanBtn {
+	margin-top: 8px;
+	padding: 6px 12px;
+	font-size: 0.85em;
+	background: #ff9800;
+}
+
+/* Hidden by default sections */
+#scanOfferSection {
+	display: none;
+}
+
+/* Audio element */
+#remoteAudio {
+	display: none;
+}
+
+/* Version info */
+#versionInfo {
+	margin: 20px auto 0;
+	max-width: 500px;
+	padding-top: 16px;
+	border-top: 1px solid #ddd;
+}
+
+#versionInfo p {
+	font-size: 0.75em;
+	color: #999;
+	margin: 0;
+}
+
+/* Utility spacing */
+.mb-12 {
+	margin-bottom: 12px;
+}
+
+.mt-16 {
+	margin-top: 16px;
+}
+
+.border-top {
+	border-top: 1px solid #ddd;
+}
+
+.pt-12 {
+	padding-top: 12px;
+}
+
+.hint-text {
+	font-size: 0.85em;
+	color: #666;
+}
