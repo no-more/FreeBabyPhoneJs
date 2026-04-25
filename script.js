@@ -854,6 +854,8 @@ async function startQuickReconnect(lastConn) {
 				showToast("Reconnecté avec succès !");
 				hide("scanOfferDoneSection");
 				hide("answerSection");
+				hide("offerDoneSection");
+				hide("pasteAnswerSection");
 			} else if (state === "failed") {
 				setStatus("Reconnexion échouée — les données ont expiré.");
 				setTimeout(() => {
@@ -955,6 +957,8 @@ async function startBabyphone() {
 				setStatus("Connexion établie ! Audio actif.");
 				hide("scanOfferDoneSection");
 				hide("answerSection");
+				hide("offerDoneSection");
+				hide("pasteAnswerSection");
 			} else if (state === "failed") {
 				setStatus("Connexion perdue — nouvelle tentative…");
 				peerConnection.restartIce();
@@ -1203,6 +1207,8 @@ async function processAnswer() {
 		resetPartialScans();
 
 		closeModal("scanAnswerModal");
+		hide("offerSection");
+		show("offerDoneSection");
 		setStatus("Connexion en cours… En attente de l'audio.");
 		setError("");
 	} catch (e) {
