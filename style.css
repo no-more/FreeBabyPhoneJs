@@ -485,6 +485,7 @@ video#readerAnswer {
 .modal-content h2 {
 	margin-top: 0;
 	margin-bottom: 15px;
+	margin-right: 10px;
 	font-size: 1.3em;
 	color: #333;
 }
