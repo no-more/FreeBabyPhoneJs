@@ -1149,6 +1149,9 @@ async function processAnswer() {
 			saveConnectionData(peerConnection.localDescription, answer);
 		}
 
+		// Reset partial scan status after successful connection
+		resetPartialScans();
+
 		closeModal("scanAnswerModal");
 		setStatus("Connexion en cours… En attente de l'audio.");
 		setError("");
@@ -1287,6 +1290,10 @@ async function startScanAnswer() {
 	const startBtn = document.getElementById("startScanAnswerBtn");
 	const stopBtn = document.getElementById("stopScanAnswerBtn");
 	const readerElement = document.getElementById("readerAnswer");
+	if (!startBtn || !stopBtn || !readerElement) {
+		setError("Erreur : éléments du scanner introuvables");
+		return;
+	}
 	try {
 		// Ensure video element is clean and ready
 		readerElement.removeAttribute('src');
@@ -1305,6 +1312,7 @@ async function startScanAnswer() {
 					} else if (scanResult && scanResult !== true) {
 						// We have all parts, use the combined data
 						await stopScanAnswer();
+						closeModal("scanAnswerModal");
 						document.getElementById("answerInput").value = scanResult;
 						await processAnswer();
 					}
@@ -1313,6 +1321,7 @@ async function startScanAnswer() {
 
 				// Single QR code (not split)
 				await stopScanAnswer();
+				closeModal("scanAnswerModal");
 				document.getElementById("answerInput").value = decodedText;
 				await processAnswer();
 			},
@@ -1340,8 +1349,10 @@ async function stopScanAnswer() {
 	} catch (e) { }
 	qrScannerAnswer = null;
 	isScanningAnswer = false;
-	document.getElementById("startScanAnswerBtn").disabled = false;
-	document.getElementById("stopScanAnswerBtn").disabled = true;
+	const startBtn = document.getElementById("startScanAnswerBtn");
+	const stopBtn = document.getElementById("stopScanAnswerBtn");
+	if (startBtn) startBtn.disabled = false;
+	if (stopBtn) stopBtn.disabled = true;
 }
 
 function stopBabyphone() {
