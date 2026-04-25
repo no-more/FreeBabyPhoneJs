@@ -1015,6 +1015,7 @@ async function startBabyphone() {
 				setStatus("QR code prêt — faites-le scanner par le Récepteur.");
 			}
 			show("offerSection");
+			show("pasteAnswerSection");
 			openModal("offerQrModal");
 			initQrSwipeSupport();
 		} else {
