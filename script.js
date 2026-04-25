@@ -5,7 +5,6 @@ let isStarted = false;
 let wakeLock = null;
 let silentAudioCtx = null;
 let vuAnimFrame = null;
-let playBtnInserted = false;
 
 let qrScannerOffer = null;
 let qrScannerAnswer = null;
@@ -62,7 +61,7 @@ const configuration = {
 };
 
 if (location.protocol === "file:") {
-	document.getElementById("httpsWarning").style.display = "block";
+	document.getElementById("httpsWarning").classList.remove("hidden");
 }
 
 const startBtn = document.getElementById("startBtn");
@@ -85,19 +84,10 @@ if (savedRole) {
 // Check for last connection and show reconnect option
 const lastConn = getLastConnectionData();
 if (lastConn) {
-	const reconnectDiv = document.createElement("div");
-	reconnectDiv.id = "reconnectSection";
-	reconnectDiv.style.cssText = "margin: 16px auto; max-width: 500px; padding: 16px; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #2196F3;";
 	const minutesAgo = Math.floor((Date.now() - lastConn.timestamp) / 60000);
-	reconnectDiv.innerHTML = `
-		<div style="font-weight: bold; margin-bottom: 8px;">Connexion récente détectée</div>
-		<div style="font-size: 0.9em; color: #555; margin-bottom: 12px;">
-			Dernière connexion il y a ${minutesAgo} minute${minutesAgo > 1 ? 's' : ''}
-		</div>
-		<button id="reconnectBtn" style="background: #4CAF50; margin: 0;">Reconnecter rapidement</button>
-		<button id="newConnectionBtn" style="background: #757575; margin: 0 0 0 8px;">Nouvelle connexion</button>
-	`;
-	statusDiv.parentNode.insertBefore(reconnectDiv, statusDiv.nextSibling);
+	document.getElementById("reconnectInfo").textContent =
+		`Dernière connexion il y a ${minutesAgo} minute${minutesAgo > 1 ? 's' : ''}`;
+	show("reconnectSection");
 
 	document.getElementById("reconnectBtn").addEventListener("click", () => {
 		hide("reconnectSection");
@@ -158,7 +148,7 @@ document.getElementById("closeScanAnswerModal").addEventListener("click", () => 
 // Close modals when clicking outside
 window.addEventListener("click", (e) => {
 	if (e.target.classList.contains("modal")) {
-		e.target.style.display = "none";
+		e.target.classList.remove("open");
 		if (isScanningOffer && e.target.id === "scanOfferModal") stopScanOffer();
 		if (isScanningAnswer && e.target.id === "scanAnswerModal") stopScanAnswer();
 	}
@@ -182,14 +172,15 @@ if (location.hash.includes("sdp=")) {
 }
 
 function show(id) {
-	const el = document.getElementById(id);
-	el.style.display = "block";
+	document.getElementById(id).classList.remove("hidden");
 }
-function hide(id) { document.getElementById(id).style.display = "none" }
+function hide(id) {
+	document.getElementById(id).classList.add("hidden");
+}
 
 function openModal(modalId) {
 	const modal = document.getElementById(modalId);
-	modal.style.display = "block";
+	modal.classList.add("open");
 	// Recalculate QR size after modal is rendered
 	requestAnimationFrame(() => {
 		requestAnimationFrame(() => {
@@ -199,40 +190,20 @@ function openModal(modalId) {
 }
 
 function closeModal(modalId) {
-	const modal = document.getElementById(modalId);
-	modal.style.display = "none";
+	document.getElementById(modalId).classList.remove("open");
 }
 
 function setStatus(msg) { statusDiv.textContent = "Statut : " + msg; }
 function setError(msg) { errorDiv.textContent = msg ? "⚠️ " + msg : ""; }
 
 function showToast(message) {
-	let toast = document.getElementById('toast');
-	if (!toast) {
-		toast = document.createElement('div');
-		toast.id = 'toast';
-		toast.style.cssText = `
-			position: fixed;
-			bottom: 30px;
-			left: 50%;
-			transform: translateX(-50%);
-			background: rgba(0,0,0,0.8);
-			color: white;
-			padding: 14px 24px;
-			border-radius: 8px;
-			font-size: 15px;
-			z-index: 10000;
-			opacity: 0;
-			transition: opacity 0.3s ease;
-			max-width: 90vw;
-			text-align: center;
-		`;
-		document.body.appendChild(toast);
-	}
+	const toast = document.getElementById('toast');
 	toast.textContent = message;
-	toast.style.opacity = '1';
+	toast.classList.remove('hidden');
+	toast.classList.add('visible');
 	setTimeout(() => {
-		toast.style.opacity = '0';
+		toast.classList.remove('visible');
+		toast.classList.add('hidden');
 	}, 3000);
 }
 
@@ -271,12 +242,12 @@ function startVuMeter(stream) {
 	src.connect(analyser);
 	const data = new Uint8Array(analyser.frequencyBinCount);
 	const bar = document.getElementById("vuBar");
-	document.getElementById("vuMeter").style.display = "block";
+	document.getElementById("vuMeter").classList.remove("hidden");
 	function tick() {
 		analyser.getByteFrequencyData(data);
 		const avg = data.reduce((s, v) => s + v, 0) / data.length;
 		bar.style.width = Math.min(100, avg * 2.5) + "%";
-		bar.style.background = avg > 30 ? "#f9a825" : "#4CAF50";
+		bar.classList.toggle("warning", avg > 30);
 		vuAnimFrame = requestAnimationFrame(tick);
 	}
 	tick();
@@ -284,7 +255,7 @@ function startVuMeter(stream) {
 
 function stopVuMeter() {
 	if (vuAnimFrame) { cancelAnimationFrame(vuAnimFrame); vuAnimFrame = null; }
-	document.getElementById("vuMeter").style.display = "none";
+	document.getElementById("vuMeter").classList.add("hidden");
 }
 
 async function compress(str) {
@@ -484,7 +455,13 @@ function updateQrDisplay() {
 	// Show/hide swipe hint for multi-QR mode
 	const swipeHint = document.getElementById("answerSwipeHint");
 	if (swipeHint) {
-		swipeHint.style.display = answerQrParts.length > 1 ? "block" : "none";
+		if (answerQrParts.length > 1) {
+			swipeHint.classList.remove("hidden");
+			swipeHint.classList.add("visible-block");
+		} else {
+			swipeHint.classList.add("hidden");
+			swipeHint.classList.remove("visible-block");
+		}
 	}
 }
 
@@ -535,7 +512,13 @@ function updateOfferQrDisplay() {
 	// Show/hide swipe hint for multi-QR mode
 	const swipeHint = document.getElementById("offerSwipeHint");
 	if (swipeHint) {
-		swipeHint.style.display = offerQrParts.length > 1 ? "block" : "none";
+		if (offerQrParts.length > 1) {
+			swipeHint.classList.remove("hidden");
+			swipeHint.classList.add("visible-block");
+		} else {
+			swipeHint.classList.add("hidden");
+			swipeHint.classList.remove("visible-block");
+		}
 	}
 }
 
@@ -671,8 +654,10 @@ async function regenerateOfferQrCodes() {
 		offerQrParts = splitData(compressedOffer, splitModeOffer);
 		currentOfferQrIndex = 0;
 		updateOfferQrDisplay();
-		navDivOffer.style.display = "flex";
-		multiMsgOffer.style.display = "block";
+		navDivOffer.classList.remove("hidden");
+		navDivOffer.classList.add("visible-flex");
+		multiMsgOffer.classList.remove("hidden");
+		multiMsgOffer.classList.add("visible-block");
 		document.getElementById("shareOfferBtn").onclick = () => {
 			const baseUrl = location.href.split("#")[0] + "#sdp=";
 			shareOrCopy(baseUrl + offerQrParts.join(","), "Lien babyphone (toutes les parties)");
@@ -684,8 +669,10 @@ async function regenerateOfferQrCodes() {
 		offerQrParts = splitData(compressedOffer, autoParts);
 		currentOfferQrIndex = 0;
 		updateOfferQrDisplay();
-		navDivOffer.style.display = "block";
-		multiMsgOffer.style.display = "block";
+		navDivOffer.classList.remove("hidden");
+		navDivOffer.classList.add("visible-block");
+		multiMsgOffer.classList.remove("hidden");
+		multiMsgOffer.classList.add("visible-block");
 		document.getElementById("shareOfferBtn").onclick = () => {
 			const baseUrl = location.href.split("#")[0] + "#sdp=";
 			shareOrCopy(baseUrl + offerQrParts.join(","), "Lien babyphone (toutes les parties)");
@@ -696,8 +683,10 @@ async function regenerateOfferQrCodes() {
 		offerQrParts = [compressedOffer];
 		currentOfferQrIndex = 0;
 		updateOfferQrDisplay();
-		navDivOffer.style.display = "none";
-		multiMsgOffer.style.display = "none";
+		navDivOffer.classList.add("hidden");
+		navDivOffer.classList.remove("visible-flex", "visible-block");
+		multiMsgOffer.classList.add("hidden");
+		multiMsgOffer.classList.remove("visible-block");
 		const offerUrl = location.href.split("#")[0] + "#sdp=" + compressedOffer;
 		document.getElementById("shareOfferBtn").onclick = () => shareOrCopy(offerUrl, "Ouvre ce lien pour recevoir l'audio du babyphone");
 		setStatus("QR code prêt — faites-le scanner par le Récepteur.");
@@ -720,8 +709,10 @@ async function regenerateAnswerQrCodes() {
 		answerQrParts = splitData(compressedAnswer, splitMode);
 		currentQrIndex = 0;
 		updateQrDisplay();
-		navDiv.style.display = "flex";
-		multiMsg.style.display = "block";
+		navDiv.classList.remove("hidden");
+		navDiv.classList.add("visible-flex");
+		multiMsg.classList.remove("hidden");
+		multiMsg.classList.add("visible-block");
 		document.getElementById("shareAnswerBtn").onclick = () => {
 			const combined = answerQrParts.join(",");
 			shareOrCopy(combined, "Réponse babyphone (toutes les parties)");
@@ -733,8 +724,10 @@ async function regenerateAnswerQrCodes() {
 		answerQrParts = splitData(compressedAnswer, autoParts);
 		currentQrIndex = 0;
 		updateQrDisplay();
-		navDiv.style.display = "block";
-		multiMsg.style.display = "block";
+		navDiv.classList.remove("hidden");
+		navDiv.classList.add("visible-block");
+		multiMsg.classList.remove("hidden");
+		multiMsg.classList.add("visible-block");
 		document.getElementById("shareAnswerBtn").onclick = () => {
 			const combined = answerQrParts.join(",");
 			shareOrCopy(combined, "Réponse babyphone (toutes les parties)");
@@ -745,8 +738,10 @@ async function regenerateAnswerQrCodes() {
 		answerQrParts = [compressedAnswer];
 		currentQrIndex = 0;
 		updateQrDisplay();
-		navDiv.style.display = "none";
-		multiMsg.style.display = "none";
+		navDiv.classList.add("hidden");
+		navDiv.classList.remove("visible-flex", "visible-block");
+		multiMsg.classList.add("hidden");
+		multiMsg.classList.remove("visible-block");
 		document.getElementById("shareAnswerBtn").onclick = () => shareOrCopy(compressedAnswer, "Réponse babyphone");
 		setStatus("QR code prêt — faites-le scanner par l'Émetteur.");
 	}
@@ -756,11 +751,13 @@ async function regenerateAnswerQrCodes() {
 function updatePartialScanStatus() {
 	const statusDiv = document.getElementById("partialScanStatus");
 	if (partialScans.size === 0) {
-		statusDiv.style.display = "none";
+		statusDiv.classList.add("hidden");
+		statusDiv.classList.remove("visible-block");
 		return;
 	}
 
-	statusDiv.style.display = "block";
+	statusDiv.classList.remove("hidden");
+	statusDiv.classList.add("visible-block");
 	document.getElementById("partialScanCount").textContent = partialScans.size;
 
 	// Show which parts are scanned
@@ -915,7 +912,7 @@ async function startBabyphone() {
 	startBtn.disabled = true;
 	stopBtn.disabled = false;
 	roleSelect.disabled = true;
-	playBtnInserted = false;
+	document.getElementById("playAudioBtn").classList.add("hidden");
 	setError("");
 	setStatus("Connexion en cours...");
 
@@ -983,8 +980,10 @@ async function startBabyphone() {
 				offerQrParts = splitData(compressedOffer, splitModeOffer);
 				currentOfferQrIndex = 0;
 				updateOfferQrDisplay();
-				navDivOffer.style.display = "flex";
-				multiMsgOffer.style.display = "block";
+				navDivOffer.classList.remove("hidden");
+				navDivOffer.classList.add("visible-flex");
+				multiMsgOffer.classList.remove("hidden");
+				multiMsgOffer.classList.add("visible-block");
 				document.getElementById("shareOfferBtn").onclick = () => {
 					const baseUrl = location.href.split("#")[0] + "#sdp=";
 					shareOrCopy(baseUrl + offerQrParts.join(","), "Lien babyphone (toutes les parties)");
@@ -996,8 +995,10 @@ async function startBabyphone() {
 				offerQrParts = splitData(compressedOffer, autoParts);
 				currentOfferQrIndex = 0;
 				updateOfferQrDisplay();
-				navDivOffer.style.display = "block";
-				multiMsgOffer.style.display = "block";
+				navDivOffer.classList.remove("hidden");
+				navDivOffer.classList.add("visible-block");
+				multiMsgOffer.classList.remove("hidden");
+				multiMsgOffer.classList.add("visible-block");
 				document.getElementById("shareOfferBtn").onclick = () => {
 					const baseUrl = location.href.split("#")[0] + "#sdp=";
 					shareOrCopy(baseUrl + offerQrParts.join(","), "Lien babyphone (toutes les parties)");
@@ -1008,8 +1009,10 @@ async function startBabyphone() {
 				offerQrParts = [compressedOffer];
 				currentOfferQrIndex = 0;
 				updateOfferQrDisplay();
-				navDivOffer.style.display = "none";
-				multiMsgOffer.style.display = "none";
+				navDivOffer.classList.add("hidden");
+				navDivOffer.classList.remove("visible-flex", "visible-block");
+				multiMsgOffer.classList.add("hidden");
+				multiMsgOffer.classList.remove("visible-block");
 				makeQr("offerQr", offerUrl);
 				document.getElementById("shareOfferBtn").onclick = () => shareOrCopy(offerUrl, "Ouvre ce lien pour recevoir l'audio du babyphone");
 				setStatus("QR code prêt — faites-le scanner par le Récepteur.");
@@ -1037,7 +1040,7 @@ async function startBabyphone() {
 		if (error.name === "NotAllowedError" || error.name === "PermissionDeniedError") {
 			if (location.protocol !== "https:" && location.hostname !== "localhost") {
 				msg = "Micro refusé : Chrome exige HTTPS. Voir le bandeau rouge ci-dessus.";
-				document.getElementById("httpsWarning").style.display = "block";
+				document.getElementById("httpsWarning").classList.remove("hidden");
 			} else {
 				msg = "Accès au micro refusé. Vérifiez les permissions dans les réglages Chrome.";
 			}
@@ -1073,8 +1076,10 @@ async function processIncomingOffer(offer) {
 			answerQrParts = splitData(compressedAnswer, splitMode);
 			currentQrIndex = 0;
 			updateQrDisplay();
-			navDiv.style.display = "flex";
-			multiMsg.style.display = "block";
+			navDiv.classList.remove("hidden");
+			navDiv.classList.add("visible-flex");
+			multiMsg.classList.remove("hidden");
+			multiMsg.classList.add("visible-block");
 
 			// Share button combines all parts
 			document.getElementById("shareAnswerBtn").onclick = () => {
@@ -1089,8 +1094,10 @@ async function processIncomingOffer(offer) {
 			answerQrParts = splitData(compressedAnswer, autoParts);
 			currentQrIndex = 0;
 			updateQrDisplay();
-			navDiv.style.display = "block";
-			multiMsg.style.display = "block";
+			navDiv.classList.remove("hidden");
+			navDiv.classList.add("visible-block");
+			multiMsg.classList.remove("hidden");
+			multiMsg.classList.add("visible-block");
 			document.getElementById("shareAnswerBtn").onclick = () => {
 				const combined = answerQrParts.join(",");
 				shareOrCopy(combined, "Réponse babyphone (toutes les parties)");
@@ -1101,8 +1108,10 @@ async function processIncomingOffer(offer) {
 			answerQrParts = [compressedAnswer];
 			currentQrIndex = 0;
 			updateQrDisplay();
-			navDiv.style.display = "none";
-			multiMsg.style.display = "none";
+			navDiv.classList.add("hidden");
+			navDiv.classList.remove("visible-flex", "visible-block");
+			multiMsg.classList.add("hidden");
+			multiMsg.classList.remove("visible-block");
 			document.getElementById("shareAnswerBtn").onclick = () => shareOrCopy(compressedAnswer, "Réponse babyphone");
 			setStatus("QR code prêt — faites-le scanner par l'Émetteur.");
 		}
@@ -1161,19 +1170,14 @@ async function processAnswer() {
 }
 
 function showPlayButton() {
-	if (playBtnInserted) return;
-	playBtnInserted = true;
-	const btn = document.createElement("button");
-	btn.textContent = "▶ Activer l'audio";
-	btn.style.background = "#4CAF50";
+	const btn = document.getElementById("playAudioBtn");
+	btn.classList.remove("hidden");
 	btn.onclick = () => {
 		remoteAudio.play().then(() => {
-			btn.remove();
-			playBtnInserted = false;
+			btn.classList.add("hidden");
 			setStatus("Audio actif !");
 		});
 	};
-	document.body.appendChild(btn);
 }
 
 async function startScanOffer() {
@@ -1343,10 +1347,6 @@ async function stopScanAnswer() {
 	} catch (e) { }
 	qrScannerAnswer = null;
 	isScanningAnswer = false;
-	const startBtn = document.getElementById("startScanAnswerBtn");
-	const stopBtn = document.getElementById("stopScanAnswerBtn");
-	if (startBtn) startBtn.disabled = false;
-	if (stopBtn) stopBtn.disabled = true;
 }
 
 function stopBabyphone() {
@@ -1354,7 +1354,7 @@ function stopBabyphone() {
 	startBtn.disabled = false;
 	stopBtn.disabled = true;
 	roleSelect.disabled = false;
-	playBtnInserted = false;
+	document.getElementById("playAudioBtn").classList.add("hidden");
 
 	stopVuMeter();
 	if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
@@ -1369,8 +1369,10 @@ function stopBabyphone() {
 	offerQrParts = [];
 	currentOfferQrIndex = 0;
 	resetPartialScans();
-	document.getElementById("qrNavigation").style.display = "none";
-	document.getElementById("offerQrNavigation").style.display = "none";
+	document.getElementById("qrNavigation").classList.add("hidden");
+	document.getElementById("qrNavigation").classList.remove("visible-flex", "visible-block");
+	document.getElementById("offerQrNavigation").classList.add("hidden");
+	document.getElementById("offerQrNavigation").classList.remove("visible-flex", "visible-block");
 
 	// Close all modals
 	closeModal("offerQrModal");

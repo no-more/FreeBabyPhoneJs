@@ -2,6 +2,87 @@
 	box-sizing: border-box;
 }
 
+/* Utility classes */
+.hidden {
+	display: none !important;
+}
+
+.visible-flex {
+	display: flex !important;
+}
+
+.visible-block {
+	display: block !important;
+}
+
+/* Reconnect section */
+.reconnect-section {
+	margin: 16px auto;
+	max-width: 500px;
+	padding: 16px;
+	background: #e3f2fd;
+	border-radius: 8px;
+	border-left: 4px solid #2196F3;
+}
+
+.reconnect-title {
+	font-weight: bold;
+	margin-bottom: 8px;
+}
+
+.reconnect-info {
+	font-size: 0.9em;
+	color: #555;
+	margin-bottom: 12px;
+}
+
+.reconnect-primary-btn {
+	background: #4CAF50;
+	margin: 0;
+}
+
+.reconnect-secondary-btn {
+	background: #757575;
+	margin: 0 0 0 8px;
+}
+
+/* Toast notification */
+.toast {
+	position: fixed;
+	bottom: 30px;
+	left: 50%;
+	transform: translateX(-50%);
+	background: rgba(0, 0, 0, 0.8);
+	color: white;
+	padding: 14px 24px;
+	border-radius: 8px;
+	font-size: 15px;
+	z-index: 10000;
+	opacity: 0;
+	transition: opacity 0.3s ease;
+	max-width: 90vw;
+	text-align: center;
+}
+
+.toast.visible {
+	opacity: 1;
+}
+
+/* Play audio button */
+.play-audio-btn {
+	background: #4CAF50;
+	margin: 10px auto;
+}
+
+/* Modal display states */
+.modal {
+	display: none;
+}
+
+.modal.open {
+	display: block;
+}
+
 body {
 	font-family: Arial, sans-serif;
 	text-align: center;
@@ -124,7 +205,6 @@ select {
 }
 
 #vuMeter {
-	display: none;
 	margin: 8px auto;
 	width: 240px;
 	height: 14px;
@@ -139,6 +219,10 @@ select {
 	background: #4CAF50;
 	border-radius: 7px;
 	transition: width 0.1s;
+}
+
+#vuBar.warning {
+	background: #f9a825;
 }
 
 #pageShareSection {
@@ -351,18 +435,6 @@ video#readerAnswer {
 }
 
 /* Modal styles */
-.modal {
-	display: none;
-	position: fixed;
-	z-index: 1000;
-	left: 0;
-	top: 0;
-	width: 100%;
-	height: 100%;
-	overflow: auto;
-	background-color: rgba(0, 0, 0, 0.5);
-}
-
 .modal-content {
 	background-color: #fefefe;
 	margin: 10px auto;

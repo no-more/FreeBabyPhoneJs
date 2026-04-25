@@ -14,7 +14,21 @@
 	<h1> Babyphone WebRTC</h1>
 	<p>Ouvrez ce fichier dans Chrome sur les deux appareils.</p>
 
-	<div id="httpsWarning">
+	<!-- Reconnect section (hidden by default) -->
+	<div id="reconnectSection" class="reconnect-section hidden">
+		<div class="reconnect-title">Connexion récente détectée</div>
+		<div id="reconnectInfo" class="reconnect-info"></div>
+		<button id="reconnectBtn" class="reconnect-primary-btn">Reconnecter rapidement</button>
+		<button id="newConnectionBtn" class="reconnect-secondary-btn">Nouvelle connexion</button>
+	</div>
+
+	<!-- Toast notification (hidden by default) -->
+	<div id="toast" class="toast hidden"></div>
+
+	<!-- Play audio button (hidden by default) -->
+	<button id="playAudioBtn" class="play-audio-btn hidden">▶ Activer l'audio</button>
+
+	<div id="httpsWarning" class="hidden">
 		⛔ <strong>Microphonie bloquée :</strong> Chrome exige <strong>HTTPS</strong> pour accéder au micro.<br>
 		Ce fichier est ouvert en <code>file://</code> — cela ne fonctionne pas sur mobile.<br><br>
 		<strong>Solution rapide :</strong> hébergez ce fichier sur un serveur HTTPS :<br>
@@ -80,7 +94,7 @@
 				<button id="nextOfferQrBtn">→</button>
 			</div>
 			<div class="qr-container" id="offerQr"></div>
-			<div id="offerSwipeHint" class="a" style="display: none;">← Swipe pour naviguer →</div>
+			<div id="offerSwipeHint" class="swipe-hint hidden">← Swipe pour naviguer →</div>
 			<button id="shareOfferBtn"> Partager le lien (alt.)</button>
 		</div>
 	</div>
@@ -142,7 +156,7 @@
 				<button id="nextQrBtn">→</button>
 			</div>
 			<div class="qr-container" id="answerQr"></div>
-			<div id="answerSwipeHint" class="swipe-hint" style="display: none;">← Swipe pour naviguer →</div>
+			<div id="answerSwipeHint" class="swipe-hint hidden">← Swipe pour naviguer →</div>
 			<button id="shareAnswerBtn"> Partager le lien (alt.)</button>
 		</div>
 	</div>
