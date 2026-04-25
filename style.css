@@ -88,10 +88,10 @@ select {
 }
 
 .qr-container {
-	display: flex;
-	justify-content: center;
+	display: block;
 	margin: 10px auto;
 	padding: 15px;
+	text-align: center;
 }
 
 .qr-container canvas,
@@ -414,6 +414,7 @@ video#readerAnswer {
 }
 
 .swipe-hint {
+	clear: both;
 	margin-top: 12px;
 	font-size: 0.8em;
 	color: #888;
