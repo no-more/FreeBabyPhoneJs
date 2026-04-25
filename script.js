@@ -4,8 +4,27 @@ let isEmetteur = true;
 let isStarted = false;
 let wakeLock = null;
 let silentAudioCtx = null;
+let silentAudioEl = null;
+let silentAudioUrl = null;
 let vuAnimFrame = null;
 let heartbeatInterval = null;
+
+// Auto-recovery state (used when the connection drops, e.g. screen-off network change)
+let autoReconnectTimer = null;
+let autoReconnectAttempts = 0;
+const AUTO_RECONNECT_MAX_ATTEMPTS = 5;
+
+// Register service worker as early as possible (PWA install + lighter throttling on Android).
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+	window.addEventListener('load', () => {
+		navigator.serviceWorker.register('./sw.js').catch((err) => {
+			console.warn('Service worker registration failed:', err);
+		});
+	});
+	if ('storage' in navigator && navigator.storage.persist) {
+		navigator.storage.persist().catch(() => { });
+	}
+}
 
 let qrScannerOffer = null;
 let qrScannerAnswer = null;
@@ -206,6 +225,13 @@ document.addEventListener("visibilitychange", async () => {
 		await reRequestWakeLock();
 		await keepAudioContextAlive();
 		ensureMicTrackEnabled();
+		// If the connection died while the screen was off, try to recover automatically.
+		if (isStarted && peerConnection) {
+			const s = peerConnection.connectionState;
+			if (s === 'failed' || s === 'disconnected') {
+				attemptAutoRecover('visibility-return');
+			}
+		}
 	} else {
 		console.log("Page became hidden");
 		ensureMicTrackEnabled();
@@ -280,18 +306,91 @@ async function reRequestWakeLock() {
 	}
 }
 
+// Build a 1-second silent WAV blob URL that we can loop in a real <audio> element.
+// A *playing* HTMLAudioElement is treated as foreground media playback by Android Chrome,
+// which is significantly more resistant to background throttling than an AudioContext.
+function buildSilentWavUrl() {
+	const sampleRate = 8000;
+	const durationSec = 1;
+	const numSamples = sampleRate * durationSec;
+	const buffer = new ArrayBuffer(44 + numSamples * 2);
+	const view = new DataView(buffer);
+	const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+	writeStr(0, 'RIFF');
+	view.setUint32(4, 36 + numSamples * 2, true);
+	writeStr(8, 'WAVE');
+	writeStr(12, 'fmt ');
+	view.setUint32(16, 16, true);          // PCM chunk size
+	view.setUint16(20, 1, true);           // PCM format
+	view.setUint16(22, 1, true);           // mono
+	view.setUint32(24, sampleRate, true);
+	view.setUint32(28, sampleRate * 2, true); // byte rate
+	view.setUint16(32, 2, true);           // block align
+	view.setUint16(34, 16, true);          // bits per sample
+	writeStr(36, 'data');
+	view.setUint32(40, numSamples * 2, true);
+	// PCM samples already zero-filled.
+	return URL.createObjectURL(new Blob([buffer], { type: 'audio/wav' }));
+}
+
+function setupMediaSession() {
+	if (!('mediaSession' in navigator)) return;
+	try {
+		navigator.mediaSession.metadata = new MediaMetadata({
+			title: isEmetteur ? 'Babyphone — Émetteur (chambre)' : 'Babyphone — Récepteur',
+			artist: 'FreeBabyPhoneJs',
+			album: 'Écoute en cours'
+		});
+		navigator.mediaSession.playbackState = 'playing';
+		// The OS exposes lock-screen play/pause buttons. We refuse to be paused
+		// (the whole point is to keep streaming), but we honor an explicit Stop.
+		const keepAlive = () => {
+			navigator.mediaSession.playbackState = 'playing';
+			if (silentAudioEl && silentAudioEl.paused) silentAudioEl.play().catch(() => { });
+		};
+		navigator.mediaSession.setActionHandler('play', keepAlive);
+		navigator.mediaSession.setActionHandler('pause', keepAlive);
+		navigator.mediaSession.setActionHandler('stop', () => stopBabyphone());
+	} catch (e) {
+		console.warn('Media Session setup failed:', e);
+	}
+}
+
 function startSilentAudio() {
 	try {
-		silentAudioCtx = new AudioContext();
-		const oscillator = silentAudioCtx.createOscillator();
-		const gain = silentAudioCtx.createGain();
-		gain.gain.value = 0.001;
-		oscillator.connect(gain);
-		gain.connect(silentAudioCtx.destination);
-		oscillator.start();
-		console.log("Silent audio started");
+		// 1. Real <audio> element looping silence — the primary keep-alive on mobile.
+		if (!silentAudioEl) {
+			silentAudioUrl = buildSilentWavUrl();
+			silentAudioEl = new Audio(silentAudioUrl);
+			silentAudioEl.loop = true;
+			// Non-zero volume so the track is treated as actually producing sound,
+			// but low enough to be inaudible.
+			silentAudioEl.volume = 0.001;
+			silentAudioEl.setAttribute('playsinline', '');
+			silentAudioEl.preload = 'auto';
+		}
+		const playPromise = silentAudioEl.play();
+		if (playPromise && playPromise.catch) {
+			playPromise.catch((e) => console.warn('Silent loop play deferred:', e && e.message));
+		}
+
+		// 2. Legacy AudioContext oscillator kept as a belt-and-suspenders fallback.
+		if (!silentAudioCtx) {
+			silentAudioCtx = new AudioContext();
+			const oscillator = silentAudioCtx.createOscillator();
+			const gain = silentAudioCtx.createGain();
+			gain.gain.value = 0.0001;
+			oscillator.connect(gain);
+			gain.connect(silentAudioCtx.destination);
+			oscillator.start();
+		}
+
+		// 3. Tell the OS we are media playback so we get the lock-screen treatment.
+		setupMediaSession();
+
+		console.log('Silent audio started (loop element + AudioContext + MediaSession)');
 	} catch (e) {
-		console.error("Silent audio failed:", e);
+		console.error('Silent audio failed:', e);
 	}
 }
 
@@ -299,10 +398,16 @@ async function keepAudioContextAlive() {
 	if (silentAudioCtx && silentAudioCtx.state === 'suspended') {
 		try {
 			await silentAudioCtx.resume();
-			console.log("Audio context resumed");
+			console.log('Audio context resumed');
 		} catch (e) {
-			console.error("Failed to resume audio context:", e);
+			console.error('Failed to resume audio context:', e);
 		}
+	}
+	if (silentAudioEl && silentAudioEl.paused && isStarted) {
+		try { await silentAudioEl.play(); console.log('Silent loop resumed'); } catch (e) { /* ignored */ }
+	}
+	if ('mediaSession' in navigator && isStarted) {
+		navigator.mediaSession.playbackState = 'playing';
 	}
 }
 
@@ -342,7 +447,94 @@ function stopHeartbeat() {
 }
 
 function stopSilentAudio() {
+	if (silentAudioEl) {
+		try { silentAudioEl.pause(); } catch (e) { /* ignored */ }
+		silentAudioEl.removeAttribute('src');
+		try { silentAudioEl.load(); } catch (e) { /* ignored */ }
+		silentAudioEl = null;
+	}
+	if (silentAudioUrl) { URL.revokeObjectURL(silentAudioUrl); silentAudioUrl = null; }
 	if (silentAudioCtx) { silentAudioCtx.close().catch(() => { }); silentAudioCtx = null; }
+	if ('mediaSession' in navigator) {
+		try {
+			navigator.mediaSession.playbackState = 'none';
+			navigator.mediaSession.metadata = null;
+		} catch (e) { /* ignored */ }
+	}
+}
+
+// === Auto-recovery =========================================================
+// Without a signaling server we cannot truly renegotiate, but on a stable LAN
+// the cached SDPs from the last successful handshake are usually valid for a
+// while, so a tear-down + quick-reconnect often succeeds.
+function clearAutoReconnect() {
+	if (autoReconnectTimer) { clearTimeout(autoReconnectTimer); autoReconnectTimer = null; }
+}
+
+function attachConnectionStateRecovery(pc) {
+	pc.onconnectionstatechange = () => {
+		const state = pc.connectionState;
+		console.log('PC connectionState:', state);
+		if (state === 'connected') {
+			setStatus('Connexion établie ! Audio actif.');
+			hide('scanOfferDoneSection');
+			hide('answerSection');
+			hide('offerDoneSection');
+			hide('pasteAnswerSection');
+			startHeartbeat();
+			clearAutoReconnect();
+			autoReconnectAttempts = 0;
+		} else if (state === 'failed') {
+			setStatus('Connexion perdue — tentative de récupération…');
+			attemptAutoRecover('failed');
+		} else if (state === 'disconnected') {
+			setStatus('Connexion interrompue — surveillance…');
+			if (!autoReconnectTimer) {
+				autoReconnectTimer = setTimeout(() => {
+					autoReconnectTimer = null;
+					if (peerConnection && ['disconnected', 'failed'].includes(peerConnection.connectionState)) {
+						attemptAutoRecover('disconnected-timeout');
+					}
+				}, 8000);
+			}
+		}
+	};
+}
+
+function attemptAutoRecover(reason) {
+	if (!isStarted) return;
+	if (autoReconnectAttempts >= AUTO_RECONNECT_MAX_ATTEMPTS) {
+		setStatus('Reconnexion automatique abandonnée — relancez manuellement.');
+		return;
+	}
+	autoReconnectAttempts++;
+	console.log('attemptAutoRecover #' + autoReconnectAttempts + ' (' + reason + ')');
+
+	// Step 1: trigger an ICE restart on the existing PC. This is mostly useful when
+	// the same NAT rebinding happens on both sides (rare without signaling), but
+	// it costs nothing and may save us a full re-handshake.
+	if (peerConnection && peerConnection.signalingState !== 'closed' &&
+		typeof peerConnection.restartIce === 'function') {
+		try { peerConnection.restartIce(); console.log('ICE restart issued'); }
+		catch (e) { console.warn('restartIce failed:', e); }
+	}
+
+	// Step 2: after a short grace period, if still not back, tear everything down
+	// and replay the last known-good handshake from localStorage.
+	setTimeout(() => {
+		if (!isStarted) return;
+		const s = peerConnection ? peerConnection.connectionState : 'closed';
+		if (s === 'connected') { autoReconnectAttempts = 0; return; }
+
+		const lastConn = getLastConnectionData();
+		if (lastConn) {
+			showToast('Reconnexion automatique…');
+			stopBabyphone();
+			setTimeout(() => startQuickReconnect(lastConn), 300);
+		} else {
+			setStatus('Connexion perdue — données expirées, relance manuelle requise.');
+		}
+	}, 4000);
 }
 
 function startVuMeter(stream) {
@@ -933,6 +1125,7 @@ async function startQuickReconnect(lastConn) {
 
 		peerConnection.onconnectionstatechange = () => {
 			const state = peerConnection.connectionState;
+			console.log('PC connectionState (quick-reconnect):', state);
 			if (state === "connected") {
 				setStatus("Reconnexion réussie ! Audio actif.");
 				showToast("Reconnecté avec succès !");
@@ -940,13 +1133,22 @@ async function startQuickReconnect(lastConn) {
 				hide("answerSection");
 				hide("offerDoneSection");
 				hide("pasteAnswerSection");
+				startHeartbeat();
+				clearAutoReconnect();
+				autoReconnectAttempts = 0;
 			} else if (state === "failed") {
-				setStatus("Reconnexion échouée — les données ont expiré.");
-				setTimeout(() => {
-					setStatus("Veuillez utiliser les QR codes pour une nouvelle connexion.");
-					stopBabyphone();
-					startBabyphone();
-				}, 2000);
+				setStatus("Reconnexion échouée — nouvelle tentative…");
+				attemptAutoRecover('quick-reconnect-failed');
+			} else if (state === "disconnected") {
+				setStatus("Connexion interrompue — surveillance…");
+				if (!autoReconnectTimer) {
+					autoReconnectTimer = setTimeout(() => {
+						autoReconnectTimer = null;
+						if (peerConnection && ['disconnected', 'failed'].includes(peerConnection.connectionState)) {
+							attemptAutoRecover('quick-reconnect-disconnected');
+						}
+					}, 8000);
+				}
 			}
 		};
 
@@ -1035,22 +1237,7 @@ async function startBabyphone() {
 	try {
 		peerConnection = new RTCPeerConnection(configuration);
 
-		peerConnection.onconnectionstatechange = () => {
-			const state = peerConnection.connectionState;
-			if (state === "connected") {
-				setStatus("Connexion établie ! Audio actif.");
-				hide("scanOfferDoneSection");
-				hide("answerSection");
-				hide("offerDoneSection");
-				hide("pasteAnswerSection");
-				startHeartbeat();
-			} else if (state === "failed") {
-				setStatus("Connexion perdue — nouvelle tentative…");
-				peerConnection.restartIce();
-			} else if (state === "disconnected") {
-				setStatus("Connexion interrompue…");
-			}
-		};
+		attachConnectionStateRecovery(peerConnection);
 
 		peerConnection.ontrack = (event) => {
 			let receivedStream;
@@ -1499,6 +1686,7 @@ function stopBabyphone() {
 
 	stopVuMeter();
 	stopHeartbeat();
+	clearAutoReconnect();
 	if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
 	if (peerConnection) { peerConnection.close(); peerConnection = null; }
 	remoteAudio.srcObject = null;

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Full-bleed background for maskable safe zone -->
+  <rect width="512" height="512" fill="#2196F3"/>
+  <g fill="#ffffff" transform="translate(0,0)">
+    <!-- baby face (smaller, inside safe zone ~80% center) -->
+    <circle cx="256" cy="240" r="64"/>
+    <path d="M160 360 q96 -90 192 0 v32 H160 z"/>
+    <rect x="247" y="140" width="18" height="46" rx="5"/>
+    <circle cx="256" cy="134" r="12"/>
+  </g>
+</svg>
