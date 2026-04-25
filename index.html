@@ -466,6 +466,36 @@
 		function setStatus(msg) { statusDiv.textContent = "Statut : " + msg; }
 		function setError(msg) { errorDiv.textContent = msg ? "⚠️ " + msg : ""; }
 
+		function showToast(message) {
+			let toast = document.getElementById('toast');
+			if (!toast) {
+				toast = document.createElement('div');
+				toast.id = 'toast';
+				toast.style.cssText = `
+					position: fixed;
+					bottom: 30px;
+					left: 50%;
+					transform: translateX(-50%);
+					background: rgba(0,0,0,0.8);
+					color: white;
+					padding: 14px 24px;
+					border-radius: 8px;
+					font-size: 15px;
+					z-index: 10000;
+					opacity: 0;
+					transition: opacity 0.3s ease;
+					max-width: 90vw;
+					text-align: center;
+				`;
+				document.body.appendChild(toast);
+			}
+			toast.textContent = message;
+			toast.style.opacity = '1';
+			setTimeout(() => {
+				toast.style.opacity = '0';
+			}, 3000);
+		}
+
 		async function requestWakeLock() {
 			if ("wakeLock" in navigator) {
 				try {
@@ -883,7 +913,14 @@
 				return combined;
 			}
 
-			setStatus(`Partie ${parsed.index}/${parsed.total} scannée. Scannez les parties manquantes.`);
+			const remaining = expectedTotalParts - partialScans.size;
+			const remainingList = [];
+			for (let i = 1; i <= expectedTotalParts; i++) {
+				if (!partialScans.has(i)) remainingList.push(i);
+			}
+			const message = `Partie ${parsed.index}/${parsed.total} scannée ! Encore ${remaining} QR code${remaining > 1 ? 's' : ''} à scanner (${remainingList.join(', ')})`;
+			setStatus(message);
+			showToast(message);
 			return "pending";
 		}
 
