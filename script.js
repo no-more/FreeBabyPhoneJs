@@ -190,6 +190,12 @@ function hide(id) { document.getElementById(id).style.display = "none" }
 function openModal(modalId) {
 	const modal = document.getElementById(modalId);
 	modal.style.display = "block";
+	// Recalculate QR size after modal is rendered
+	requestAnimationFrame(() => {
+		requestAnimationFrame(() => {
+			recalcQrSize();
+		});
+	});
 }
 
 function closeModal(modalId) {
@@ -479,6 +485,16 @@ function updateQrDisplay() {
 	const swipeHint = document.getElementById("answerSwipeHint");
 	if (swipeHint) {
 		swipeHint.style.display = answerQrParts.length > 1 ? "block" : "none";
+	}
+}
+
+// Recalculate QR size after modal is rendered
+function recalcQrSize() {
+	if (answerQrParts.length > 0) {
+		updateQrDisplay();
+	}
+	if (offerQrParts.length > 0) {
+		updateOfferQrDisplay();
 	}
 }
 
