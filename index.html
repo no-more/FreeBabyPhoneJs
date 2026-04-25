@@ -285,7 +285,7 @@
 	<div class="sdp-section" id="scanOfferSection" style="display: none;">
 		<div class="step-hint"> <strong>Étape 1 (Récepteur) :</strong> Scannez le QR code de l'Émetteur avec la caméra.
 		</div>
-		<div id="reader"></div>
+		<video id="reader" style="width:100%; max-width:550px; border-radius:8px;"></video>
 		<button id="startScanOfferBtn" class="camera-btn">📷 Démarrer le scanner</button>
 		<button id="stopScanOfferBtn" class="camera-btn" disabled>Arrêter le scanner</button>
 	</div>
@@ -335,7 +335,7 @@
 		</div>
 		<div style="margin-bottom: 12px;">
 			<p style="font-size: 0.85em; color: #666;">Option 1 : Scanner directement avec la caméra</p>
-			<div id="readerAnswer"></div>
+			<video id="readerAnswer" style="width:100%; max-width:550px; border-radius:8px;"></video>
 			<button id="startScanAnswerBtn" class="camera-btn">📷 Scanner le QR du Récepteur</button>
 			<button id="stopScanAnswerBtn" class="camera-btn" disabled>Arrêter le scanner</button>
 		</div>
@@ -1132,6 +1132,10 @@
 			const startBtn = document.getElementById("startScanOfferBtn");
 			const stopBtn = document.getElementById("stopScanOfferBtn");
 			try {
+				// Ensure video element is clean and ready
+				readerElement.removeAttribute('src');
+				readerElement.setAttribute('playsinline', '');
+
 				qrScannerOffer = new QrScanner(
 					readerElement,
 					async (result) => {
@@ -1231,6 +1235,10 @@
 			const stopBtn = document.getElementById("stopScanAnswerBtn");
 			const readerElement = document.getElementById("readerAnswer");
 			try {
+				// Ensure video element is clean and ready
+				readerElement.removeAttribute('src');
+				readerElement.setAttribute('playsinline', '');
+
 				qrScannerAnswer = new QrScanner(
 					readerElement,
 					async (result) => {
