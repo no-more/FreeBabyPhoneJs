@@ -44,12 +44,18 @@
 		• Ou sur votre PC : <code>npx serve .</code>
 	</div>
 
-	<div>
-		<label for="role"><strong>Rôle :</strong></label><br>
-		<select id="role">
-			<option value="emetteur"> Émetteur (chambre de bébé)</option>
-			<option value="recepteur"> Récepteur (votre téléphone)</option>
-		</select>
+	<div id="roleSection">
+		<div id="roleChip" class="role-chip hidden">
+			<span>Rôle : <strong id="roleChipLabel"></strong></span>
+			<button type="button" id="changeRoleBtn" class="link-btn">Changer</button>
+		</div>
+		<div id="roleSelector">
+			<label for="role"><strong>Rôle :</strong></label><br>
+			<select id="role">
+				<option value="emetteur"> Émetteur (chambre de bébé)</option>
+				<option value="recepteur"> Récepteur (votre téléphone)</option>
+			</select>
+		</div>
 	</div>
 
 	<div>

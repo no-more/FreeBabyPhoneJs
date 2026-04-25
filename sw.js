@@ -7,7 +7,7 @@
  * Strategy: cache-first for the app shell, network-first fallback for everything else.
  */
 
-const CACHE = 'babyphone-shell-v1';
+const CACHE = 'babyphone-shell-v2';
 const SHELL = [
 	'./',
 	'./index.html',

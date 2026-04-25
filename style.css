@@ -15,6 +15,35 @@
 	display: block !important;
 }
 
+/* Role chip (compact display once a role is saved) */
+.role-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	background: #ffffff;
+	border: 1px solid #ccc;
+	border-radius: 999px;
+	padding: 6px 14px;
+	margin: 8px;
+	font-size: 0.95em;
+}
+
+.link-btn {
+	background: transparent;
+	color: #2196F3;
+	border: none;
+	padding: 0;
+	margin: 0;
+	font-size: 0.9em;
+	text-decoration: underline;
+	cursor: pointer;
+	min-width: 0;
+}
+
+.link-btn:hover {
+	color: #0d6cb8;
+}
+
 /* Reconnect section */
 .reconnect-section {
 	margin: 16px auto;

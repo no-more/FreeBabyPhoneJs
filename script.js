@@ -14,6 +14,101 @@ let autoReconnectTimer = null;
 let autoReconnectAttempts = 0;
 const AUTO_RECONNECT_MAX_ATTEMPTS = 5;
 
+// Watchdog used to fall back from "quick reconnect" to a fresh QR-code handshake
+// when the cached SDPs no longer reach a `connected` state within a few seconds.
+let quickReconnectWatchdog = null;
+const QUICK_RECONNECT_TIMEOUT_MS = 10000;
+
+// Cached, persisted DTLS certificate so that re-opening the page on either device
+// keeps the same fingerprint -> previously-cached SDPs remain valid for hours/days.
+let cachedCertificate = null;
+const CERT_DB_NAME = 'babyphone-pairing';
+const CERT_STORE = 'certs';
+const CERT_KEY = 'main';
+
+function openCertDb() {
+	return new Promise((resolve, reject) => {
+		if (!('indexedDB' in window)) { reject(new Error('No IndexedDB')); return; }
+		const req = indexedDB.open(CERT_DB_NAME, 1);
+		req.onupgradeneeded = () => {
+			if (!req.result.objectStoreNames.contains(CERT_STORE)) {
+				req.result.createObjectStore(CERT_STORE);
+			}
+		};
+		req.onsuccess = () => resolve(req.result);
+		req.onerror = () => reject(req.error);
+	});
+}
+
+async function loadStoredCertificate() {
+	try {
+		const db = await openCertDb();
+		return await new Promise((res, rej) => {
+			const tx = db.transaction(CERT_STORE, 'readonly');
+			const req = tx.objectStore(CERT_STORE).get(CERT_KEY);
+			req.onsuccess = () => res(req.result || null);
+			req.onerror = () => rej(req.error);
+		});
+	} catch (e) { return null; }
+}
+
+async function saveCertificate(cert) {
+	try {
+		const db = await openCertDb();
+		await new Promise((res, rej) => {
+			const tx = db.transaction(CERT_STORE, 'readwrite');
+			tx.objectStore(CERT_STORE).put(cert, CERT_KEY);
+			tx.oncomplete = () => res();
+			tx.onerror = () => rej(tx.error);
+		});
+	} catch (e) { /* best effort */ }
+}
+
+async function getOrCreateCertificate() {
+	if (cachedCertificate) return cachedCertificate;
+	let cert = await loadStoredCertificate();
+	// Regenerate if the cert has (or is about to) expire.
+	if (cert && cert.expires && cert.expires < Date.now() + 24 * 60 * 60 * 1000) {
+		cert = null;
+	}
+	if (!cert) {
+		try {
+			cert = await RTCPeerConnection.generateCertificate({
+				name: 'ECDSA',
+				namedCurve: 'P-256',
+				expires: 365 * 24 * 60 * 60 * 1000 // 1 year
+			});
+			await saveCertificate(cert);
+		} catch (e) {
+			console.warn('Certificate generation failed, falling back to per-session cert:', e);
+			return null;
+		}
+	}
+	cachedCertificate = cert;
+	return cert;
+}
+
+async function newPeerConnection() {
+	const cert = await getOrCreateCertificate();
+	const cfg = cert ? Object.assign({}, configuration, { certificates: [cert] }) : configuration;
+	return new RTCPeerConnection(cfg);
+}
+
+function formatRelativeTime(ts) {
+	const diff = Date.now() - ts;
+	const m = Math.floor(diff / 60000);
+	if (m < 1) return "à l'instant";
+	if (m < 60) return `il y a ${m} min`;
+	const h = Math.floor(m / 60);
+	if (h < 24) return `il y a ${h} h`;
+	const d = Math.floor(h / 24);
+	return `il y a ${d} j`;
+}
+
+function roleLabel(role) {
+	return role === 'emetteur' ? 'Émetteur (chambre)' : 'Récepteur (parent)';
+}
+
 // Register service worker as early as possible (PWA install + lighter throttling on Android).
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
 	window.addEventListener('load', () => {
@@ -54,9 +149,10 @@ function getLastConnectionData() {
 		const data = localStorage.getItem(LS_KEYS.LAST_CONNECTION);
 		if (!data) return null;
 		const parsed = JSON.parse(data);
-		// Valid for 10 minutes
-		const isValid = (Date.now() - parsed.timestamp) < 10 * 60 * 1000;
-		return isValid ? parsed : null;
+		// We no longer enforce a 10-minute validity window. Cached SDPs are tried
+		// optimistically on every (re)open; if they fail, the fresh QR flow is
+		// triggered automatically as a fallback.
+		return parsed;
 	} catch (e) {
 		return null;
 	}
@@ -95,18 +191,18 @@ const savedRole = localStorage.getItem(LS_KEYS.ROLE);
 if (savedRole) {
 	roleSelect.value = savedRole;
 	isEmetteur = savedRole === "emetteur";
+	showRoleChip(savedRole);
 	if (!isEmetteur) {
 		show("scanOfferSection");
 		setStatus("Prêt à scanner le QR de l'Émetteur.");
 	}
 }
 
-// Check for last connection and show reconnect option
+// Check for last connection and offer / auto-trigger quick reconnect.
 const lastConn = getLastConnectionData();
 if (lastConn) {
-	const minutesAgo = Math.floor((Date.now() - lastConn.timestamp) / 60000);
 	document.getElementById("reconnectInfo").textContent =
-		`Dernière connexion il y a ${minutesAgo} minute${minutesAgo > 1 ? 's' : ''}`;
+		`Dernière connexion ${formatRelativeTime(lastConn.timestamp)}`;
 	show("reconnectSection");
 
 	document.getElementById("reconnectBtn").addEventListener("click", () => {
@@ -118,11 +214,48 @@ if (lastConn) {
 		clearLastConnection();
 		hide("reconnectSection");
 	});
+
+	// Auto-trigger quick reconnect on load when we have everything we need
+	// (cached SDPs + saved role + same role still selected). Skip if the URL
+	// already carries an offer, that path has its own auto-start.
+	if (savedRole && !location.hash.includes('sdp=')) {
+		window.addEventListener('load', () => {
+			setTimeout(() => {
+				if (isStarted) return;
+				hide('reconnectSection');
+				startQuickReconnect(lastConn);
+			}, 400);
+		}, { once: true });
+	}
+}
+
+function showRoleChip(role) {
+	const chip = document.getElementById('roleChip');
+	const selector = document.getElementById('roleSelector');
+	const label = document.getElementById('roleChipLabel');
+	if (!chip || !selector || !label) return;
+	label.textContent = roleLabel(role);
+	chip.classList.remove('hidden');
+	selector.classList.add('hidden');
+}
+
+function showRoleSelector() {
+	const chip = document.getElementById('roleChip');
+	const selector = document.getElementById('roleSelector');
+	if (!chip || !selector) return;
+	chip.classList.add('hidden');
+	selector.classList.remove('hidden');
+}
+
+const changeRoleBtn = document.getElementById('changeRoleBtn');
+if (changeRoleBtn) {
+	changeRoleBtn.addEventListener('click', showRoleSelector);
 }
 
 roleSelect.addEventListener("change", () => {
 	isEmetteur = roleSelect.value === "emetteur";
 	localStorage.setItem(LS_KEYS.ROLE, roleSelect.value);
+	showRoleChip(roleSelect.value);
 	if (!isEmetteur && !isStarted) {
 		show("scanOfferSection");
 		setStatus("Prêt à scanner le QR de l'Émetteur.");
@@ -1116,12 +1249,34 @@ function handlePartialScan(text) {
 	return "pending";
 }
 
+function clearQuickReconnectWatchdog() {
+	if (quickReconnectWatchdog) { clearTimeout(quickReconnectWatchdog); quickReconnectWatchdog = null; }
+}
+
+function armQuickReconnectWatchdog() {
+	clearQuickReconnectWatchdog();
+	quickReconnectWatchdog = setTimeout(() => {
+		quickReconnectWatchdog = null;
+		if (!isStarted) return;
+		const s = peerConnection ? peerConnection.connectionState : 'closed';
+		if (s === 'connected') return;
+		console.log('Quick reconnect timed out, falling back to fresh QR flow.');
+		showToast('Reprise impossible — nouvelle pairing requise.');
+		stopBabyphone();
+		setTimeout(() => startBabyphone(), 200);
+	}, QUICK_RECONNECT_TIMEOUT_MS);
+}
+
 async function startQuickReconnect(lastConn) {
-	setStatus("Tentative de reconnexion rapide...");
+	if (isStarted) return;
+	isStarted = true;
+	setStatus("Reprise de la connexion…");
 	isEmetteur = roleSelect.value === "emetteur";
 
+	armQuickReconnectWatchdog();
+
 	try {
-		peerConnection = new RTCPeerConnection(configuration);
+		peerConnection = await newPeerConnection();
 
 		peerConnection.onconnectionstatechange = () => {
 			const state = peerConnection.connectionState;
@@ -1133,11 +1288,14 @@ async function startQuickReconnect(lastConn) {
 				hide("answerSection");
 				hide("offerDoneSection");
 				hide("pasteAnswerSection");
+				hide("reconnectSection");
 				startHeartbeat();
 				clearAutoReconnect();
+				clearQuickReconnectWatchdog();
 				autoReconnectAttempts = 0;
 			} else if (state === "failed") {
 				setStatus("Reconnexion échouée — nouvelle tentative…");
+				clearQuickReconnectWatchdog();
 				attemptAutoRecover('quick-reconnect-failed');
 			} else if (state === "disconnected") {
 				setStatus("Connexion interrompue — surveillance…");
@@ -1218,6 +1376,10 @@ async function startQuickReconnect(lastConn) {
 		console.error("Quick reconnect failed:", error);
 		setStatus("Reconnexion rapide impossible — utilisation des QR codes.");
 		showToast("Données expirées, utilisez les QR codes");
+		clearQuickReconnectWatchdog();
+		// Reset state so the fresh-flow startBabyphone() call below isn't a no-op.
+		isStarted = false;
+		if (peerConnection) { try { peerConnection.close(); } catch (_) { } peerConnection = null; }
 		setTimeout(() => startBabyphone(), 1500);
 	}
 }
@@ -1235,7 +1397,7 @@ async function startBabyphone() {
 	setStatus("Connexion en cours...");
 
 	try {
-		peerConnection = new RTCPeerConnection(configuration);
+		peerConnection = await newPeerConnection();
 
 		attachConnectionStateRecovery(peerConnection);
 
@@ -1687,6 +1849,7 @@ function stopBabyphone() {
 	stopVuMeter();
 	stopHeartbeat();
 	clearAutoReconnect();
+	clearQuickReconnectWatchdog();
 	if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
 	if (peerConnection) { peerConnection.close(); peerConnection = null; }
 	remoteAudio.srcObject = null;
