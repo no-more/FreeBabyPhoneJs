@@ -1179,8 +1179,10 @@ function showPlayButton() {
 async function startScanOffer() {
 	if (isScanningOffer) return;
 	const readerElement = document.getElementById("reader");
-	const startBtn = document.getElementById("startScanOfferBtn");
-	const stopBtn = document.getElementById("stopScanOfferBtn");
+	if (!readerElement) {
+		setError("Erreur : élément vidéo introuvable");
+		return;
+	}
 	try {
 		// Ensure video element is clean and ready
 		readerElement.removeAttribute('src');
@@ -1265,8 +1267,6 @@ async function startScanOffer() {
 		);
 		await qrScannerOffer.start();
 		isScanningOffer = true;
-		startBtn.disabled = true;
-		stopBtn.disabled = false;
 		setStatus("Scanner actif — pointez vers le QR de l'Émetteur");
 	} catch (e) {
 		setError("Impossible d'accéder à la caméra : " + e.message);
@@ -1281,17 +1281,13 @@ async function stopScanOffer() {
 	} catch (e) { }
 	qrScannerOffer = null;
 	isScanningOffer = false;
-	document.getElementById("startScanOfferBtn").disabled = false;
-	document.getElementById("stopScanOfferBtn").disabled = true;
 }
 
 async function startScanAnswer() {
 	if (isScanningAnswer) return;
-	const startBtn = document.getElementById("startScanAnswerBtn");
-	const stopBtn = document.getElementById("stopScanAnswerBtn");
 	const readerElement = document.getElementById("readerAnswer");
-	if (!startBtn || !stopBtn || !readerElement) {
-		setError("Erreur : éléments du scanner introuvables");
+	if (!readerElement) {
+		setError("Erreur : élément vidéo introuvable");
 		return;
 	}
 	try {
@@ -1333,8 +1329,6 @@ async function startScanAnswer() {
 		);
 		await qrScannerAnswer.start();
 		isScanningAnswer = true;
-		startBtn.disabled = true;
-		stopBtn.disabled = false;
 		setStatus("Scanner actif — pointez vers le QR du Récepteur");
 	} catch (e) {
 		setError("Impossible d'accéder à la caméra : " + e.message);
