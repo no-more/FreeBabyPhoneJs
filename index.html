@@ -794,6 +794,15 @@
 			// Update button states
 			document.getElementById("prevQrBtn").disabled = currentQrIndex === 0;
 			document.getElementById("nextQrBtn").disabled = currentQrIndex === answerQrParts.length - 1;
+
+			// Add swipe hint for multi-QR mode
+			if (answerQrParts.length > 1 && !container.querySelector('.swipe-hint')) {
+				const hint = document.createElement('div');
+				hint.className = 'swipe-hint';
+				hint.style.cssText = 'margin-top: 8px; font-size: 0.8em; color: #888; text-align: center;';
+				hint.innerHTML = '← Swipe pour naviguer →';
+				container.appendChild(hint);
+			}
 		}
 
 		function showPrevQr() {
@@ -828,6 +837,15 @@
 			document.getElementById("offerQrCounter").textContent = `${currentOfferQrIndex + 1} / ${offerQrParts.length}`;
 			document.getElementById("prevOfferQrBtn").disabled = currentOfferQrIndex === 0;
 			document.getElementById("nextOfferQrBtn").disabled = currentOfferQrIndex === offerQrParts.length - 1;
+
+			// Add swipe hint for multi-QR mode
+			if (offerQrParts.length > 1 && !container.querySelector('.swipe-hint')) {
+				const hint = document.createElement('div');
+				hint.className = 'swipe-hint';
+				hint.style.cssText = 'margin-top: 8px; font-size: 0.8em; color: #888; text-align: center;';
+				hint.innerHTML = '← Swipe pour naviguer →';
+				container.appendChild(hint);
+			}
 		}
 
 		function showPrevOfferQr() {
@@ -842,6 +860,108 @@
 				currentOfferQrIndex++;
 				updateOfferQrDisplay();
 			}
+		}
+
+		// Swipe gesture support for QR code navigation
+		function addSwipeSupport(elementId, onSwipeLeft, onSwipeRight) {
+			const element = document.getElementById(elementId);
+			if (!element) return;
+
+			let startX = 0;
+			let startY = 0;
+			let isSwiping = false;
+
+			element.addEventListener('touchstart', (e) => {
+				startX = e.touches[0].clientX;
+				startY = e.touches[0].clientY;
+				isSwiping = true;
+				element.style.transition = 'transform 0.1s ease-out';
+			}, { passive: true });
+
+			element.addEventListener('touchmove', (e) => {
+				if (!isSwiping) return;
+				const currentX = e.touches[0].clientX;
+				const diffX = currentX - startX;
+				// Only horizontal swipes
+				if (Math.abs(diffX) > 10) {
+					element.style.transform = `translateX(${diffX * 0.3}px)`;
+				}
+			}, { passive: true });
+
+			element.addEventListener('touchend', (e) => {
+				if (!isSwiping) return;
+				isSwiping = false;
+				element.style.transition = 'transform 0.2s ease-out';
+				element.style.transform = 'translateX(0)';
+
+				const endX = e.changedTouches[0].clientX;
+				const diffX = endX - startX;
+				const diffY = e.changedTouches[0].clientY - startY;
+
+				// Minimum swipe distance (50px) and mostly horizontal
+				if (Math.abs(diffX) > 50 && Math.abs(diffX) > Math.abs(diffY) * 2) {
+					if (diffX > 0) {
+						onSwipeRight();
+					} else {
+						onSwipeLeft();
+					}
+				}
+			}, { passive: true });
+
+			// Mouse support for desktop testing
+			let mouseDown = false;
+			element.addEventListener('mousedown', (e) => {
+				startX = e.clientX;
+				isSwiping = true;
+				mouseDown = true;
+			});
+
+			element.addEventListener('mousemove', (e) => {
+				if (!mouseDown) return;
+				const diffX = e.clientX - startX;
+				if (Math.abs(diffX) > 10) {
+					element.style.transform = `translateX(${diffX * 0.3}px)`;
+				}
+			});
+
+			element.addEventListener('mouseup', (e) => {
+				if (!mouseDown) return;
+				mouseDown = false;
+				isSwiping = false;
+				element.style.transform = 'translateX(0)';
+
+				const diffX = e.clientX - startX;
+				if (Math.abs(diffX) > 50) {
+					if (diffX > 0) {
+						onSwipeRight();
+					} else {
+						onSwipeLeft();
+					}
+				}
+			});
+
+			element.addEventListener('mouseleave', () => {
+				if (mouseDown) {
+					mouseDown = false;
+					isSwiping = false;
+					element.style.transform = 'translateX(0)';
+				}
+			});
+		}
+
+		// Initialize swipe support for QR containers
+		function initQrSwipeSupport() {
+			// Answer QR (receiver side) - swipe left = next, swipe right = prev
+			addSwipeSupport('answerQr',
+				() => showNextQr(),      // swipe left → next
+				() => showPrevQr()       // swipe right → previous
+			);
+
+			// Offer QR (emitter side) - swipe left = next, swipe right = prev
+			addSwipeSupport('offerQr',
+				() => showNextOfferQr(), // swipe left → next
+				() => showPrevOfferQr()  // swipe right → previous
+			);
 		}
 
 		// Regenerate offer QR codes when split mode changes
@@ -1205,6 +1325,7 @@
 					}
 					show("offerSection");
 					show("pasteAnswerSection");
+					initQrSwipeSupport();
 				} else {
 					await requestWakeLock();
 					startSilentAudio();
@@ -1293,6 +1414,7 @@
 				}
 
 				show("answerSection");
+				initQrSwipeSupport();
 				setError("");
 			} catch (e) {
 				setError("Offre invalide : " + e.message);
