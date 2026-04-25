@@ -458,13 +458,10 @@ function updateQrDisplay() {
 	document.getElementById("prevQrBtn").disabled = currentQrIndex === 0;
 	document.getElementById("nextQrBtn").disabled = currentQrIndex === answerQrParts.length - 1;
 
-	// Add swipe hint for multi-QR mode
-	if (answerQrParts.length > 1 && !container.querySelector('.swipe-hint')) {
-		const hint = document.createElement('div');
-		hint.className = 'swipe-hint';
-		hint.style.cssText = 'margin-top: 8px; font-size: 0.8em; color: #888; text-align: center;';
-		hint.innerHTML = '← Swipe pour naviguer →';
-		container.appendChild(hint);
+	// Show/hide swipe hint for multi-QR mode
+	const swipeHint = document.getElementById("answerSwipeHint");
+	if (swipeHint) {
+		swipeHint.style.display = answerQrParts.length > 1 ? "block" : "none";
 	}
 }
 
@@ -501,13 +498,10 @@ function updateOfferQrDisplay() {
 	document.getElementById("prevOfferQrBtn").disabled = currentOfferQrIndex === 0;
 	document.getElementById("nextOfferQrBtn").disabled = currentOfferQrIndex === offerQrParts.length - 1;
 
-	// Add swipe hint for multi-QR mode
-	if (offerQrParts.length > 1 && !container.querySelector('.swipe-hint')) {
-		const hint = document.createElement('div');
-		hint.className = 'swipe-hint';
-		hint.style.cssText = 'margin-top: 8px; font-size: 0.8em; color: #888; text-align: center;';
-		hint.innerHTML = '← Swipe pour naviguer →';
-		container.appendChild(hint);
+	// Show/hide swipe hint for multi-QR mode
+	const swipeHint = document.getElementById("offerSwipeHint");
+	if (swipeHint) {
+		swipeHint.style.display = offerQrParts.length > 1 ? "block" : "none";
 	}
 }
 
