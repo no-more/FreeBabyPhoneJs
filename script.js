@@ -1100,6 +1100,10 @@ async function processAnswer() {
 	const raw = document.getElementById("answerInput").value.trim();
 	if (!raw) { setError("Veuillez coller la réponse."); return; }
 	try {
+		if (!peerConnection) {
+			setError("Erreur : connexion non initialisée. Veuillez d'abord cliquer sur 'Démarrer'.");
+			return;
+		}
 		let dataToProcess = raw;
 
 		// Check if this is comma-separated partial QR codes
@@ -1352,4 +1356,3 @@ function stopBabyphone() {
 	["offerSection", "scanOfferSection", "answerSection", "pasteAnswerSection"].forEach(hide);
 	setStatus("Arrêté");
 }
-
