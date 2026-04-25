@@ -74,6 +74,28 @@
 	margin: 10px auto;
 }
 
+/* Mute button */
+.mute-btn {
+	background: #4CAF50;
+	margin: 10px auto;
+	min-width: 180px;
+}
+
+.mute-btn.muted {
+	background: #757575;
+}
+
+/* Mute microphone button */
+.mute-mic-btn {
+	background: #4CAF50;
+	margin: 10px auto;
+	min-width: 180px;
+}
+
+.mute-mic-btn.muted {
+	background: #e53935;
+}
+
 /* Modal display states */
 .modal {
 	display: none;

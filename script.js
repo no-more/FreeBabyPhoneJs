@@ -115,6 +115,33 @@ startBtn.addEventListener("click", startBabyphone);
 stopBtn.addEventListener("click", stopBabyphone);
 document.getElementById("processAnswerBtn").addEventListener("click", processAnswer);
 
+// Mute toggle functionality
+const muteBtn = document.getElementById("muteBtn");
+let isMuted = true; // Start muted, user must unmute
+remoteAudio.muted = isMuted;
+
+muteBtn.addEventListener("click", () => {
+	isMuted = !isMuted;
+	remoteAudio.muted = isMuted;
+	muteBtn.textContent = isMuted ? "🔊 Activer le son" : "🔇 Couper le son";
+	muteBtn.classList.toggle("muted", isMuted);
+});
+
+// Mute microphone functionality (emitter side)
+const muteMicBtn = document.getElementById("muteMicBtn");
+let isMicMuted = false;
+
+muteMicBtn.addEventListener("click", () => {
+	isMicMuted = !isMicMuted;
+	if (localStream) {
+		localStream.getAudioTracks().forEach(track => {
+			track.enabled = !isMicMuted;
+		});
+	}
+	muteMicBtn.textContent = isMicMuted ? "🎤 Micro coupé" : "🎤 Micro activé";
+	muteMicBtn.classList.toggle("muted", isMicMuted);
+});
+
 document.getElementById("prevQrBtn").addEventListener("click", showPrevQr);
 document.getElementById("nextQrBtn").addEventListener("click", showNextQr);
 document.getElementById("prevOfferQrBtn").addEventListener("click", showPrevOfferQr);
@@ -859,6 +886,7 @@ async function startQuickReconnect(lastConn) {
 			await requestWakeLock();
 			startSilentAudio();
 			startVuMeter(localStream);
+			muteMicBtn.classList.remove("hidden");
 			localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
 			if (lastConn.emitterSdp) {
@@ -944,6 +972,7 @@ async function startBabyphone() {
 				showPlayButton();
 			});
 			setStatus("Audio reçu !");
+			muteBtn.classList.remove("hidden");
 		};
 
 		if (isEmetteur) {
@@ -959,6 +988,7 @@ async function startBabyphone() {
 			startSilentAudio();
 			startVuMeter(localStream);
 			setStatus("Micro activé");
+			muteMicBtn.classList.remove("hidden");
 			localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
 			const offer = await peerConnection.createOffer();
@@ -1351,6 +1381,19 @@ function stopBabyphone() {
 	stopBtn.disabled = true;
 	roleSelect.disabled = false;
 	document.getElementById("playAudioBtn").classList.add("hidden");
+
+	// Reset mute button
+	isMuted = true;
+	remoteAudio.muted = isMuted;
+	muteBtn.classList.add("hidden");
+	muteBtn.classList.remove("muted");
+	muteBtn.textContent = "🔊 Activer le son";
+
+	// Reset mute mic button
+	isMicMuted = false;
+	muteMicBtn.classList.add("hidden");
+	muteMicBtn.classList.remove("muted");
+	muteMicBtn.textContent = "🎤 Micro activé";
 
 	stopVuMeter();
 	if (localStream) { localStream.getTracks().forEach(track => track.stop()); localStream = null; }
