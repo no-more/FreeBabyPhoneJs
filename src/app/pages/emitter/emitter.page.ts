@@ -1,121 +1,178 @@
 import {
-  ChangeDetectionStrategy,
-  Component,
-  OnDestroy,
-  computed,
-  inject,
-  signal,
+	ChangeDetectionStrategy,
+	Component,
+	OnDestroy,
+	computed,
+	inject,
+	signal,
 } from '@angular/core';
 import {
-  IonBackButton,
-  IonButton,
-  IonButtons,
-  IonContent,
-  IonHeader,
-  IonIcon,
-  IonNote,
-  IonSpinner,
-  IonTitle,
-  IonToolbar,
+	IonBackButton,
+	IonButton,
+	IonButtons,
+	IonContent,
+	IonHeader,
+	IonIcon,
+	IonNote,
+	IonSpinner,
+	IonTitle,
+	IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { micOutline, stopCircleOutline } from 'ionicons/icons';
+import {
+	checkmarkCircle,
+	micOutline,
+	qrCodeOutline,
+	stopCircleOutline,
+} from 'ionicons/icons';
 
 import { MicService } from '../../core/media/mic.service';
 import { autoSplit } from '../../core/signaling/qr-parts';
-import { encodeSdp } from '../../core/signaling/sdp-codec';
+import { decodeSdp, encodeSdp } from '../../core/signaling/sdp-codec';
 import { PeerConnectionService } from '../../core/webrtc/peer-connection.service';
 import { QrDisplayComponent } from '../../shared/components/qr-display/qr-display.component';
+import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component';
 
-type Phase = 'idle' | 'preparing' | 'awaiting-answer' | 'failed';
+type Phase =
+	| 'idle'
+	| 'preparing'
+	| 'awaiting-answer'
+	| 'scanning-answer'
+	| 'connecting'
+	| 'connected'
+	| 'failed';
 
 @Component({
-  selector: 'app-emitter-page',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    IonBackButton,
-    IonButton,
-    IonButtons,
-    IonContent,
-    IonHeader,
-    IonIcon,
-    IonNote,
-    IonSpinner,
-    IonTitle,
-    IonToolbar,
-    QrDisplayComponent,
-  ],
-  templateUrl: './emitter.page.html',
-  styleUrl: './emitter.page.scss',
+	selector: 'app-emitter-page',
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	imports: [
+		IonBackButton,
+		IonButton,
+		IonButtons,
+		IonContent,
+		IonHeader,
+		IonIcon,
+		IonNote,
+		IonSpinner,
+		IonTitle,
+		IonToolbar,
+		QrDisplayComponent,
+		QrScannerComponent,
+	],
+	templateUrl: './emitter.page.html',
+	styleUrl: './emitter.page.scss',
 })
 export class EmitterPage implements OnDestroy {
-  private readonly mic = inject(MicService);
-  private readonly peerService = inject(PeerConnectionService);
+	private readonly mic = inject(MicService);
+	private readonly peerService = inject(PeerConnectionService);
 
-  protected readonly phase = signal<Phase>('idle');
-  protected readonly errorMessage = signal<string | null>(null);
-  protected readonly offerParts = signal<string[]>([]);
+	protected readonly phase = signal<Phase>('idle');
+	protected readonly errorMessage = signal<string | null>(null);
+	protected readonly offerParts = signal<string[]>([]);
 
-  protected readonly isPreparing = computed(() => this.phase() === 'preparing');
-  protected readonly isAwaitingAnswer = computed(() => this.phase() === 'awaiting-answer');
-  protected readonly isFailed = computed(() => this.phase() === 'failed');
+	protected readonly isPreparing = computed(() => this.phase() === 'preparing');
+	protected readonly isAwaitingAnswer = computed(() => this.phase() === 'awaiting-answer');
+	protected readonly isScanningAnswer = computed(() => this.phase() === 'scanning-answer');
+	protected readonly isFailed = computed(() => this.phase() === 'failed');
 
-  private peer: RTCPeerConnection | null = null;
+	private peer: RTCPeerConnection | null = null;
 
-  constructor() {
-    addIcons({ micOutline, stopCircleOutline });
-  }
+	constructor() {
+		addIcons({ checkmarkCircle, micOutline, qrCodeOutline, stopCircleOutline });
+	}
 
-  ngOnDestroy(): void {
-    this.teardown();
-  }
+	ngOnDestroy(): void {
+		this.teardown();
+	}
 
-  protected async start(): Promise<void> {
-    this.errorMessage.set(null);
-    this.phase.set('preparing');
-    try {
-      const stream = await this.mic.acquire();
-      const peer = await this.peerService.create();
-      this.peer = peer;
+	protected async start(): Promise<void> {
+		this.errorMessage.set(null);
+		this.phase.set('preparing');
+		try {
+			const stream = await this.mic.acquire();
+			const peer = await this.peerService.create();
+			this.peer = peer;
 
-      stream.getTracks().forEach((track) => peer.addTrack(track, stream));
+			stream.getTracks().forEach((track) => peer.addTrack(track, stream));
 
-      const offer = await peer.createOffer();
-      await peer.setLocalDescription(offer);
-      await this.peerService.waitForIceGathering(peer);
+			const offer = await peer.createOffer();
+			await peer.setLocalDescription(offer);
+			await this.peerService.waitForIceGathering(peer);
 
-      const local = peer.localDescription;
-      if (!local) throw new Error('Aucune description locale produite.');
+			const local = peer.localDescription;
+			if (!local) throw new Error('Aucune description locale produite.');
 
-      const payload = await encodeSdp(local.toJSON());
-      this.offerParts.set(autoSplit(payload));
-      this.phase.set('awaiting-answer');
-    } catch (err) {
-      this.errorMessage.set(this.toMessage(err));
-      this.phase.set('failed');
-      this.teardown();
-    }
-  }
+			const payload = await encodeSdp(local.toJSON());
+			this.offerParts.set(autoSplit(payload));
+			this.phase.set('awaiting-answer');
+		} catch (err) {
+			this.errorMessage.set(this.toMessage(err));
+			this.phase.set('failed');
+			this.teardown();
+		}
+	}
 
-  protected stop(): void {
-    this.teardown();
-    this.phase.set('idle');
-    this.errorMessage.set(null);
-    this.offerParts.set([]);
-  }
+	protected stop(): void {
+		this.teardown();
+		this.phase.set('idle');
+		this.errorMessage.set(null);
+		this.offerParts.set([]);
+	}
 
-  private teardown(): void {
-    this.peer?.getSenders().forEach((s) => s.track?.stop());
-    this.peer?.close();
-    this.peer = null;
-    this.mic.release();
-  }
+	protected startAnswerScan(): void {
+		this.phase.set('scanning-answer');
+	}
 
-  private toMessage(err: unknown): string {
-    if (err instanceof DOMException && err.name === 'NotAllowedError') {
-      return 'Accès au microphone refusé. Autorisez le micro dans les réglages du navigateur.';
-    }
-    if (err instanceof Error) return err.message;
-    return String(err);
-  }
+	protected async onAnswerScanned(payload: string): Promise<void> {
+		const peer = this.peer;
+		if (!peer) return;
+		try {
+			this.phase.set('connecting');
+			const answer = await decodeSdp(payload);
+			await peer.setRemoteDescription(answer);
+			this.watchForConnected(peer);
+		} catch (err) {
+			this.errorMessage.set('Réponse invalide : ' + this.toMessage(err));
+			this.phase.set('awaiting-answer');
+		}
+	}
+
+	protected onScanError(err: Error): void {
+		this.errorMessage.set(
+			'Impossible d\u2019ouvrir la caméra : ' + (err.message || 'accès refusé'),
+		);
+		this.phase.set('awaiting-answer');
+	}
+
+	private watchForConnected(peer: RTCPeerConnection): void {
+		const check = (): void => {
+			const state = peer.connectionState;
+			if (state === 'connected') {
+				peer.removeEventListener('connectionstatechange', check);
+				this.phase.set('connected');
+			} else if (state === 'failed' || state === 'closed') {
+				peer.removeEventListener('connectionstatechange', check);
+				this.errorMessage.set('\u00c9chec de la connexion. Relancez l\u2019appairage.');
+				this.phase.set('failed');
+				this.teardown();
+			}
+		};
+		peer.addEventListener('connectionstatechange', check);
+		check();
+	}
+
+	private teardown(): void {
+		this.peer?.getSenders().forEach((s) => s.track?.stop());
+		this.peer?.close();
+		this.peer = null;
+		this.mic.release();
+	}
+
+	private toMessage(err: unknown): string {
+		if (err instanceof DOMException && err.name === 'NotAllowedError') {
+			return 'Accès au microphone refusé. Autorisez le micro dans les réglages du navigateur.';
+		}
+		if (err instanceof Error) return err.message;
+		return String(err);
+	}
 }

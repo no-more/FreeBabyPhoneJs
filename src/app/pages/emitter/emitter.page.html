@@ -30,12 +30,49 @@
 
       @case ('awaiting-answer') {
         <p class="emitter__instructions">
-          Sur le récepteur, scannez ce QR code. L'émetteur attend ensuite la réponse.
+          <strong>Étape 1/2.</strong> Sur le récepteur, scannez ce QR code.
         </p>
         <app-qr-display [parts]="offerParts()"></app-qr-display>
+        @if (errorMessage()) {
+          <ion-note color="danger" class="emitter__error">{{ errorMessage() }}</ion-note>
+        }
+        <ion-button expand="block" (click)="startAnswerScan()">
+          <ion-icon slot="start" name="qr-code-outline" aria-hidden="true"></ion-icon>
+          Étape 2/2 : scanner la réponse du récepteur
+        </ion-button>
         <ion-button expand="block" fill="outline" color="medium" (click)="stop()">
           <ion-icon slot="start" name="stop-circle-outline" aria-hidden="true"></ion-icon>
           Annuler
+        </ion-button>
+      }
+
+      @case ('scanning-answer') {
+        <p class="emitter__instructions">
+          Pointez la caméra sur le QR code affiché par le récepteur.
+        </p>
+        <app-qr-scanner
+          (scanned)="onAnswerScanned($event)"
+          (error)="onScanError($event)"
+        ></app-qr-scanner>
+        <ion-button expand="block" fill="outline" color="medium" (click)="stop()">Annuler</ion-button>
+      }
+
+      @case ('connecting') {
+        <div class="emitter__preparing">
+          <ion-spinner name="crescent"></ion-spinner>
+          <p>Établissement de la connexion…</p>
+        </div>
+      }
+
+      @case ('connected') {
+        <div class="emitter__connected">
+          <ion-icon name="checkmark-circle" color="success" aria-hidden="true"></ion-icon>
+          <h2>Connecté</h2>
+          <p>Le récepteur reçoit le son. Gardez cet appareil allumé près du bébé.</p>
+        </div>
+        <ion-button expand="block" fill="outline" color="medium" (click)="stop()">
+          <ion-icon slot="start" name="stop-circle-outline" aria-hidden="true"></ion-icon>
+          Arrêter la diffusion
         </ion-button>
       }
 
