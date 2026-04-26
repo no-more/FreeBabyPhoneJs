@@ -320,6 +320,11 @@ document.getElementById("showScanAnswerBtn").addEventListener("click", () => {
 	openModal("scanAnswerModal");
 	startScanAnswer();
 });
+document.getElementById("nextScanReceiverBtn").addEventListener("click", () => {
+	closeModal("offerQrModal");
+	openModal("scanAnswerModal");
+	startScanAnswer();
+});
 document.getElementById("closeScanAnswerModal").addEventListener("click", () => {
 	closeModal("scanAnswerModal");
 	if (isScanningAnswer) stopScanAnswer();
@@ -614,6 +619,12 @@ function attachConnectionStateRecovery(pc) {
 			hide('answerSection');
 			hide('offerDoneSection');
 			hide('pasteAnswerSection');
+			closeModal('offerQrModal');
+			closeModal('scanOfferModal');
+			closeModal('answerQrModal');
+			closeModal('scanAnswerModal');
+			if (isScanningOffer) stopScanOffer();
+			if (isScanningAnswer) stopScanAnswer();
 			startHeartbeat();
 			clearAutoReconnect();
 			autoReconnectAttempts = 0;
@@ -1289,6 +1300,10 @@ async function startQuickReconnect(lastConn) {
 				hide("offerDoneSection");
 				hide("pasteAnswerSection");
 				hide("reconnectSection");
+				closeModal('offerQrModal');
+				closeModal('scanOfferModal');
+				closeModal('answerQrModal');
+				closeModal('scanAnswerModal');
 				startHeartbeat();
 				clearAutoReconnect();
 				clearQuickReconnectWatchdog();

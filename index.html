@@ -20,7 +20,6 @@
 
 <body>
 	<h1> Babyphone WebRTC</h1>
-	<p>Ouvrez ce fichier dans Chrome sur les deux appareils.</p>
 
 	<!-- Reconnect section (hidden by default) -->
 	<div id="reconnectSection" class="reconnect-section hidden">
@@ -73,7 +72,7 @@
 	<div class="sdp-section hidden" id="offerSection">
 		<div class="step-hint"> <strong>Étape 1 (Émetteur) :</strong> Faites scanner ce(s) QR code(s) par le Récepteur.
 		</div>
-		<button id="showOfferQrBtn">📱 Afficher le(s) QR code(s)</button>
+		<button id="showOfferQrBtn" class="hidden">📱 Afficher le(s) QR code(s)</button>
 	</div>
 
 	<!-- Étape 1 (Émetteur) : Scan terminé -->
@@ -110,6 +109,7 @@
 			</div>
 			<div class="qr-container" id="offerQr"></div>
 			<div id="offerSwipeHint" class="swipe-hint hidden">← Swipe pour naviguer →</div>
+			<button id="nextScanReceiverBtn">➡️ Suivant : scanner le QR du Récepteur</button>
 			<button id="shareOfferBtn"> Partager le lien (alt.)</button>
 		</div>
 	</div>
@@ -118,7 +118,7 @@
 	<div class="sdp-section hidden" id="scanOfferSection">
 		<div class="step-hint"> <strong>Étape 1 (Récepteur) :</strong> Scannez le QR code de l'Émetteur avec la caméra.
 		</div>
-		<button id="showScanOfferBtn">📷 Ouvrir le scanner</button>
+		<button id="showScanOfferBtn" class="hidden">📷 Ouvrir le scanner</button>
 	</div>
 
 	<!-- Étape 1b (Récepteur) : Scan terminé -->
@@ -140,7 +140,7 @@
 	<div class="sdp-section hidden" id="answerSection">
 		<div class="step-hint"> <strong>Étape 2 (Récepteur) :</strong> Faites scanner ce(s) QR code(s) par l'Émetteur.
 		</div>
-		<button id="showAnswerQrBtn">📱 Afficher le(s) QR code(s)</button>
+		<button id="showAnswerQrBtn" class="hidden">📱 Afficher le(s) QR code(s)</button>
 	</div>
 
 	<!-- Modal for Answer QR -->
@@ -185,7 +185,7 @@
 			<div id="partialScanParts"></div>
 			<button id="resetPartialScanBtn">Réinitialiser</button>
 		</div>
-		<button id="showScanAnswerBtn">📷 Ouvrir le scanner</button>
+		<button id="showScanAnswerBtn" class="hidden">📷 Ouvrir le scanner</button>
 		<div class="mt-16 border-top pt-12">
 			<p class="hint-text">Option 2 : Coller manuellement le lien (toutes les parties)</p>
 			<textarea id="answerInput"
@@ -212,6 +212,7 @@
 	<div id="pageShareSection">
 		<p>📲 Partager cet outil</p>
 		<div id="pageQr"></div>
+		<p>Ouvrez ce fichier dans Chrome/Chromium/Chrome Mobile sur les deux appareils.</p>
 	</div>
 
 	<div id="versionInfo">
