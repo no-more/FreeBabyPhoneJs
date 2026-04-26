@@ -1,0 +1,48 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-title>Babyphone</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding home-content">
+  <div class="home">
+    <header class="home__intro">
+      <h1>Babyphone</h1>
+      <p>
+        Appairage <strong>sans serveur</strong> entre deux appareils du même Wi-Fi, via QR code.
+        Choisissez le rôle de cet appareil.
+      </p>
+    </header>
+
+    <div class="home__roles">
+      <button
+        type="button"
+        class="role-card role-card--emitter"
+        (click)="select('emitter')"
+        aria-label="Choisir Émetteur (téléphone près du bébé)"
+      >
+        <ion-icon name="mic-outline" aria-hidden="true"></ion-icon>
+        <span class="role-card__title">Émetteur</span>
+        <span class="role-card__subtitle">Téléphone près du bébé</span>
+      </button>
+
+      <button
+        type="button"
+        class="role-card role-card--receiver"
+        (click)="select('receiver')"
+        aria-label="Choisir Récepteur (téléphone des parents)"
+      >
+        <ion-icon name="headset-outline" aria-hidden="true"></ion-icon>
+        <span class="role-card__title">Récepteur</span>
+        <span class="role-card__subtitle">Téléphone des parents</span>
+      </button>
+    </div>
+
+    <footer class="home__footer">
+      <p>
+        Astuce&nbsp;: installez l'app sur l'écran d'accueil (« Ajouter à l'écran d'accueil »)
+        pour un fonctionnement plus fiable en arrière-plan.
+      </p>
+    </footer>
+  </div>
+</ion-content>
