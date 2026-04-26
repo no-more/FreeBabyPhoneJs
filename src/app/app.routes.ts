@@ -8,13 +8,11 @@ export const routes: Routes = [
   },
   {
     path: 'emitter',
-    loadComponent: () =>
-      import('./pages/emitter/emitter.page').then((m) => m.EmitterPage),
+    loadComponent: () => import('./pages/emitter/emitter.page').then((m) => m.EmitterPage),
   },
   {
     path: 'receiver',
-    loadComponent: () =>
-      import('./pages/receiver/receiver.page').then((m) => m.ReceiverPage),
+    loadComponent: () => import('./pages/receiver/receiver.page').then((m) => m.ReceiverPage),
   },
   { path: '**', redirectTo: '' },
 ];

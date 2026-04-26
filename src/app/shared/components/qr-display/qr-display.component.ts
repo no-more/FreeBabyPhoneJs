@@ -11,10 +11,7 @@ import {
   input,
   signal,
 } from '@angular/core';
-import {
-  IonButton,
-  IonIcon,
-} from '@ionic/angular/standalone';
+import { IonButton, IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { chevronBackOutline, chevronForwardOutline } from 'ionicons/icons';
 
@@ -43,7 +40,9 @@ export class QrDisplayComponent implements AfterViewInit, OnChanges, OnDestroy {
 
   protected readonly currentIndex = signal(0);
   protected readonly isMulti = computed(() => this.parts().length > 1);
-  protected readonly counter = computed(() => `${this.currentIndex() + 1} / ${this.parts().length}`);
+  protected readonly counter = computed(
+    () => `${this.currentIndex() + 1} / ${this.parts().length}`,
+  );
 
   private resizeObserver: ResizeObserver | null = null;
 

@@ -37,7 +37,13 @@ export function parseQrPart(raw: string): QrPart | null {
   const index = Number.parseInt(match[1] ?? '', 10);
   const total = Number.parseInt(match[2] ?? '', 10);
   const data = match[3] ?? '';
-  if (!Number.isFinite(index) || !Number.isFinite(total) || total < 1 || index < 1 || index > total) {
+  if (
+    !Number.isFinite(index) ||
+    !Number.isFinite(total) ||
+    total < 1 ||
+    index < 1 ||
+    index > total
+  ) {
     return null;
   }
   return { index, total, data };

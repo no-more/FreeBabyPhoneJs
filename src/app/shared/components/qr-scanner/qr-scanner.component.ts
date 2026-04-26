@@ -62,16 +62,12 @@ export class QrScannerComponent implements AfterViewInit, OnDestroy {
 
   private async start(): Promise<void> {
     try {
-      this.scanner = new QrScanner(
-        this.videoRef.nativeElement,
-        (result) => this.onResult(result),
-        {
-          preferredCamera: 'environment',
-          highlightScanRegion: true,
-          highlightCodeOutline: true,
-          maxScansPerSecond: 5,
-        },
-      );
+      this.scanner = new QrScanner(this.videoRef.nativeElement, (result) => this.onResult(result), {
+        preferredCamera: 'environment',
+        highlightScanRegion: true,
+        highlightCodeOutline: true,
+        maxScansPerSecond: 5,
+      });
       await this.scanner.start();
     } catch (err) {
       this.error.emit(err instanceof Error ? err : new Error(String(err)));

@@ -29,6 +29,7 @@ import {
 } from 'ionicons/icons';
 
 import { autoSplit } from '../../core/signaling/qr-parts';
+import { WakeLockService } from '../../core/media/wake-lock.service';
 import { decodeSdp, encodeSdp } from '../../core/signaling/sdp-codec';
 import { PeerConnectionService } from '../../core/webrtc/peer-connection.service';
 import { QrDisplayComponent } from '../../shared/components/qr-display/qr-display.component';
@@ -65,6 +66,7 @@ type Phase =
 })
 export class ReceiverPage implements OnDestroy {
   private readonly peerService = inject(PeerConnectionService);
+  private readonly wakeLock = inject(WakeLockService);
 
   protected readonly phase = signal<Phase>('idle');
   protected readonly errorMessage = signal<string | null>(null);
@@ -166,6 +168,7 @@ export class ReceiverPage implements OnDestroy {
       if (state === 'connected') {
         peer.removeEventListener('connectionstatechange', check);
         this.phase.set('connected');
+        void this.wakeLock.acquire();
         // Re-attach the stream now that the audio element is in the DOM.
         queueMicrotask(() => this.attachStreamToAudio());
       } else if (state === 'failed' || state === 'closed') {
@@ -187,6 +190,7 @@ export class ReceiverPage implements OnDestroy {
     this.remoteStream = null;
     this.peer?.close();
     this.peer = null;
+    this.wakeLock.release();
   }
 
   private toMessage(err: unknown): string {
