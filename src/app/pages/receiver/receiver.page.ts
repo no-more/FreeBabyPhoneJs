@@ -35,6 +35,7 @@ import { WakeLockService } from '../../core/media/wake-lock.service';
 import { decodeSdp, encodeSdp } from '../../core/signaling/sdp-codec';
 import { PeerConnectionService } from '../../core/webrtc/peer-connection.service';
 import { ReconnectService } from '../../core/webrtc/reconnect.service';
+import { QuickReconnectService } from '../../core/storage/quick-reconnect.service';
 import { QrDisplayComponent } from '../../shared/components/qr-display/qr-display.component';
 import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component';
 
@@ -73,6 +74,7 @@ export class ReceiverPage implements OnDestroy {
   private readonly wakeLock = inject(WakeLockService);
   private readonly audioKeepalive = inject(AudioKeepaliveService);
   private readonly reconnect = inject(ReconnectService);
+  private readonly quickReconnect = inject(QuickReconnectService);
 
   protected readonly phase = signal<Phase>('idle');
   protected readonly errorMessage = signal<string | null>(null);
@@ -86,6 +88,7 @@ export class ReceiverPage implements OnDestroy {
 
   private peer: RTCPeerConnection | null = null;
   private remoteStream: MediaStream | null = null;
+  private quickReconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     addIcons({ checkmarkCircle, qrCodeOutline, stopCircleOutline, volumeHighOutline });
@@ -97,6 +100,8 @@ export class ReceiverPage implements OnDestroy {
         this.teardown();
       }
     });
+    // Attempt quick reconnect on mount
+    void this.attemptQuickReconnect();
   }
 
   ngOnDestroy(): void {
@@ -186,6 +191,19 @@ export class ReceiverPage implements OnDestroy {
         peer.removeEventListener('connectionstatechange', check);
         this.phase.set('connected');
         void this.wakeLock.acquire();
+        // Save for quick reconnect on next launch
+        const cached = this.quickReconnect.load();
+        if (!cached) {
+          const remote = peer.remoteDescription;
+          const local = peer.localDescription;
+          if (remote && local) {
+            this.quickReconnect.save({
+              timestamp: Date.now(),
+              emitterSdp: remote.toJSON(),
+              receiverSdp: local.toJSON(),
+            });
+          }
+        }
         // Re-attach the stream now that the audio element is in the DOM.
         queueMicrotask(() => this.attachStreamToAudio());
       } else if (state === 'failed' || state === 'closed') {
@@ -210,6 +228,46 @@ export class ReceiverPage implements OnDestroy {
     this.wakeLock.release();
     this.audioKeepalive.stop();
     this.reconnect.detach();
+    if (this.quickReconnectTimeout) {
+      clearTimeout(this.quickReconnectTimeout);
+      this.quickReconnectTimeout = null;
+    }
+  }
+
+  private async attemptQuickReconnect(): Promise<void> {
+    const cached = this.quickReconnect.load();
+    if (!cached?.emitterSdp || !cached?.receiverSdp) return;
+
+    this.phase.set('connecting');
+    this.errorMessage.set('Reprise de la connexion…');
+
+    // 10s watchdog
+    this.quickReconnectTimeout = setTimeout(() => {
+      this.quickReconnect.clear();
+      this.teardown();
+      this.phase.set('idle');
+      this.errorMessage.set('Reconnexion échouée — utilisez les QR codes.');
+    }, 10000);
+
+    try {
+      const peer = await this.peerService.create();
+      this.peer = peer;
+      this.reconnect.attach(peer);
+
+      peer.addEventListener('track', (event) => this.onRemoteTrack(event));
+
+      // Restore remote (emitter's offer) then local (our answer)
+      await peer.setRemoteDescription(cached.emitterSdp);
+      await peer.setLocalDescription(cached.receiverSdp);
+
+      // Watch for connection or failure
+      this.watchForConnected(peer);
+    } catch {
+      this.quickReconnect.clear();
+      this.teardown();
+      this.phase.set('idle');
+      this.errorMessage.set(null);
+    }
   }
 
   private toMessage(err: unknown): string {
