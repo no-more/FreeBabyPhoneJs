@@ -22,14 +22,14 @@
       }
 
       @case ('scanning-offer') {
-        <p class="receiver__instructions">
-          Pointez la caméra sur le QR code de l'émetteur.
-        </p>
+        <p class="receiver__instructions">Pointez la caméra sur le QR code de l'émetteur.</p>
         <app-qr-scanner
           (scanned)="onOfferScanned($event)"
           (error)="onScanError($event)"
         ></app-qr-scanner>
-        <ion-button expand="block" fill="outline" color="medium" (click)="stop()">Annuler</ion-button>
+        <ion-button expand="block" fill="outline" color="medium" (click)="stop()"
+          >Annuler</ion-button
+        >
       }
 
       @case ('preparing-answer') {
@@ -41,11 +41,12 @@
 
       @case ('awaiting-emitter') {
         <p class="receiver__instructions">
-          <strong>Étape 2/2.</strong> Sur l'émetteur, scannez ce QR code pour finaliser
-          l'appairage.
+          <strong>Étape 2/2.</strong> Sur l'émetteur, scannez ce QR code pour finaliser l'appairage.
         </p>
         <app-qr-display [parts]="answerParts()"></app-qr-display>
-        <ion-button expand="block" fill="outline" color="medium" (click)="stop()">Annuler</ion-button>
+        <ion-button expand="block" fill="outline" color="medium" (click)="stop()"
+          >Annuler</ion-button
+        >
       }
 
       @case ('connecting') {
@@ -61,6 +62,7 @@
           <h2>Connecté</h2>
           <p>Vous écoutez le son du bébé en direct.</p>
         </div>
+        <app-vu-meter [stream]="remoteStream()"></app-vu-meter>
         <audio #audio autoplay playsinline></audio>
         @if (needsTapToPlay()) {
           <ion-button expand="block" (click)="tapToPlay()">

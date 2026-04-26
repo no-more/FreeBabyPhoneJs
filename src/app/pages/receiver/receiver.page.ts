@@ -38,6 +38,7 @@ import { ReconnectService } from '../../core/webrtc/reconnect.service';
 import { QuickReconnectService } from '../../core/storage/quick-reconnect.service';
 import { QrDisplayComponent } from '../../shared/components/qr-display/qr-display.component';
 import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component';
+import { VuMeterComponent } from '../../shared/components/vu-meter/vu-meter.component';
 
 type Phase =
   | 'idle'
@@ -65,6 +66,7 @@ type Phase =
     IonToolbar,
     QrDisplayComponent,
     QrScannerComponent,
+    VuMeterComponent,
   ],
   templateUrl: './receiver.page.html',
   styleUrl: './receiver.page.scss',
@@ -80,6 +82,7 @@ export class ReceiverPage implements OnDestroy {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly answerParts = signal<string[]>([]);
   protected readonly needsTapToPlay = signal(false);
+  protected readonly remoteStream = signal<MediaStream | null>(null);
 
   protected readonly isFailed = computed(() => this.phase() === 'failed');
   protected readonly isReconnecting = computed(() => this.reconnect.status() === 'reconnecting');
@@ -87,7 +90,6 @@ export class ReceiverPage implements OnDestroy {
   @ViewChild('audio', { static: false }) audioRef?: ElementRef<HTMLAudioElement>;
 
   private peer: RTCPeerConnection | null = null;
-  private remoteStream: MediaStream | null = null;
   private quickReconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
@@ -170,14 +172,16 @@ export class ReceiverPage implements OnDestroy {
   }
 
   private onRemoteTrack(event: RTCTrackEvent): void {
-    this.remoteStream = event.streams[0] ?? new MediaStream([event.track]);
+    const stream = event.streams[0] ?? new MediaStream([event.track]);
+    this.remoteStream.set(stream);
     queueMicrotask(() => this.attachStreamToAudio());
   }
 
   private attachStreamToAudio(): void {
     const audio = this.audioRef?.nativeElement;
-    if (!audio || !this.remoteStream) return;
-    audio.srcObject = this.remoteStream;
+    const stream = this.remoteStream();
+    if (!audio || !stream) return;
+    audio.srcObject = stream;
     audio.play().catch(() => {
       // Browsers may require an explicit user gesture to start playback.
       this.needsTapToPlay.set(true);
@@ -221,8 +225,10 @@ export class ReceiverPage implements OnDestroy {
     if (this.audioRef?.nativeElement) {
       this.audioRef.nativeElement.srcObject = null;
     }
-    this.remoteStream?.getTracks().forEach((t) => t.stop());
-    this.remoteStream = null;
+    // Get the current stream from signal before clearing
+    const currentStream = this.remoteStream();
+    currentStream?.getTracks().forEach((t) => t.stop());
+    this.remoteStream.set(null);
     this.peer?.close();
     this.peer = null;
     this.wakeLock.release();

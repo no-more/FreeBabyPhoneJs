@@ -32,6 +32,7 @@ import { ReconnectService } from '../../core/webrtc/reconnect.service';
 import { QuickReconnectService } from '../../core/storage/quick-reconnect.service';
 import { QrDisplayComponent } from '../../shared/components/qr-display/qr-display.component';
 import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component';
+import { VuMeterComponent } from '../../shared/components/vu-meter/vu-meter.component';
 
 type Phase =
   | 'idle'
@@ -59,6 +60,7 @@ type Phase =
     IonToolbar,
     QrDisplayComponent,
     QrScannerComponent,
+    VuMeterComponent,
   ],
   templateUrl: './emitter.page.html',
   styleUrl: './emitter.page.scss',
@@ -74,6 +76,7 @@ export class EmitterPage implements OnDestroy {
   protected readonly phase = signal<Phase>('idle');
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly offerParts = signal<string[]>([]);
+  protected readonly localStream = signal<MediaStream | null>(null);
 
   protected readonly isPreparing = computed(() => this.phase() === 'preparing');
   protected readonly isAwaitingAnswer = computed(() => this.phase() === 'awaiting-answer');
@@ -108,6 +111,7 @@ export class EmitterPage implements OnDestroy {
     this.audioKeepalive.start();
     try {
       const stream = await this.mic.acquire();
+      this.localStream.set(stream);
       const peer = await this.peerService.create();
       this.peer = peer;
 
@@ -202,6 +206,7 @@ export class EmitterPage implements OnDestroy {
     this.wakeLock.release();
     this.audioKeepalive.stop();
     this.reconnect.detach();
+    this.localStream.set(null);
     if (this.quickReconnectTimeout) {
       clearTimeout(this.quickReconnectTimeout);
       this.quickReconnectTimeout = null;
