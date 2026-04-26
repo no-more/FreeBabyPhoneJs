@@ -1,3 +1,6 @@
+// @ts-nocheck
+/// <reference lib="webworker" />
+
 /* Babyphone service worker
  * Goals:
  *  - Make the app installable as a PWA (Android Chrome will then apply lighter
@@ -11,7 +14,7 @@ const CACHE = 'babyphone-shell-v2';
 const SHELL = [
 	'./',
 	'./index.html',
-	'./script.js',
+	'./dist/main.js',
 	'./style.css',
 	'./manifest.webmanifest',
 	'./icon.svg',

@@ -17,16 +17,31 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
 
       - name: Get git info
         id: git-info
@@ -39,14 +54,27 @@ jobs:
           sed -i "s|--COMMIT_HASH--|${{ steps.git-info.outputs.commit_sha }}|g" index.html
           sed -i "s|--DEPLOY_DATE--|${{ steps.git-info.outputs.commit_date }}|g" index.html
 
+      - name: Stage site
+        run: |
+          mkdir -p _site
+          cp index.html style.css manifest.webmanifest icon.svg icon-maskable.svg sw.js _site/
+          cp -r dist _site/dist
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: '_site'
 
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

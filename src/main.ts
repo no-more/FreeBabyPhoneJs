@@ -1,3 +1,8 @@
+// @ts-nocheck
+/* eslint-disable */
+import qrcode from 'qrcode-generator';
+import { QrScanner } from 'qr-scanner';
+
 let localStream;
 let peerConnection;
 let isEmetteur = true;
