@@ -1,7 +1,6 @@
 // @ts-nocheck
-/* eslint-disable */
 import qrcode from 'qrcode-generator';
-import { QrScanner } from 'qr-scanner';
+import QrScanner from 'qr-scanner';
 
 let localStream;
 let peerConnection;
@@ -172,7 +171,7 @@ let answerQrParts = [];
 let currentQrIndex = 0;
 let offerQrParts = [];
 let currentOfferQrIndex = 0;
-let partialScans = new Map();
+const partialScans = new Map();
 let expectedTotalParts = 0;
 
 const configuration = {
@@ -1399,7 +1398,7 @@ async function startQuickReconnect(lastConn) {
 		clearQuickReconnectWatchdog();
 		// Reset state so the fresh-flow startBabyphone() call below isn't a no-op.
 		isStarted = false;
-		if (peerConnection) { try { peerConnection.close(); } catch (_) { } peerConnection = null; }
+		if (peerConnection) { try { peerConnection.close(); } catch (_) { /* ignore close errors during cleanup */ } peerConnection = null; }
 		setTimeout(() => startBabyphone(), 1500);
 	}
 }
@@ -1779,7 +1778,7 @@ async function stopScanOffer() {
 	try {
 		await qrScannerOffer.stop();
 		qrScannerOffer.destroy();
-	} catch (e) { }
+	} catch (e) {/** */ }
 	qrScannerOffer = null;
 	isScanningOffer = false;
 }
@@ -1841,7 +1840,7 @@ async function stopScanAnswer() {
 	try {
 		await qrScannerAnswer.stop();
 		qrScannerAnswer.destroy();
-	} catch (e) { }
+	} catch (e) { /** */ }
 	qrScannerAnswer = null;
 	isScanningAnswer = false;
 }
