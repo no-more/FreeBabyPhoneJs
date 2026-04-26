@@ -21,6 +21,7 @@ import {
 import { addIcons } from 'ionicons';
 import { checkmarkCircle, micOutline, qrCodeOutline, stopCircleOutline } from 'ionicons/icons';
 
+import { AudioKeepaliveService } from '../../core/media/audio-keepalive.service';
 import { MicService } from '../../core/media/mic.service';
 import { WakeLockService } from '../../core/media/wake-lock.service';
 import { autoSplit } from '../../core/signaling/qr-parts';
@@ -62,6 +63,7 @@ export class EmitterPage implements OnDestroy {
   private readonly mic = inject(MicService);
   private readonly peerService = inject(PeerConnectionService);
   private readonly wakeLock = inject(WakeLockService);
+  private readonly audioKeepalive = inject(AudioKeepaliveService);
 
   protected readonly phase = signal<Phase>('idle');
   protected readonly errorMessage = signal<string | null>(null);
@@ -85,6 +87,7 @@ export class EmitterPage implements OnDestroy {
   protected async start(): Promise<void> {
     this.errorMessage.set(null);
     this.phase.set('preparing');
+    this.audioKeepalive.start();
     try {
       const stream = await this.mic.acquire();
       const peer = await this.peerService.create();
@@ -165,6 +168,7 @@ export class EmitterPage implements OnDestroy {
     this.peer = null;
     this.mic.release();
     this.wakeLock.release();
+    this.audioKeepalive.stop();
   }
 
   private toMessage(err: unknown): string {

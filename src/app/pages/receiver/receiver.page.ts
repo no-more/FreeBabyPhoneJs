@@ -28,6 +28,7 @@ import {
   volumeHighOutline,
 } from 'ionicons/icons';
 
+import { AudioKeepaliveService } from '../../core/media/audio-keepalive.service';
 import { autoSplit } from '../../core/signaling/qr-parts';
 import { WakeLockService } from '../../core/media/wake-lock.service';
 import { decodeSdp, encodeSdp } from '../../core/signaling/sdp-codec';
@@ -67,6 +68,7 @@ type Phase =
 export class ReceiverPage implements OnDestroy {
   private readonly peerService = inject(PeerConnectionService);
   private readonly wakeLock = inject(WakeLockService);
+  private readonly audioKeepalive = inject(AudioKeepaliveService);
 
   protected readonly phase = signal<Phase>('idle');
   protected readonly errorMessage = signal<string | null>(null);
@@ -91,6 +93,7 @@ export class ReceiverPage implements OnDestroy {
   protected startOfferScan(): void {
     this.errorMessage.set(null);
     this.phase.set('scanning-offer');
+    this.audioKeepalive.start();
   }
 
   protected async onOfferScanned(payload: string): Promise<void> {
@@ -191,6 +194,7 @@ export class ReceiverPage implements OnDestroy {
     this.peer?.close();
     this.peer = null;
     this.wakeLock.release();
+    this.audioKeepalive.stop();
   }
 
   private toMessage(err: unknown): string {
