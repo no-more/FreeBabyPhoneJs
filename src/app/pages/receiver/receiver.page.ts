@@ -5,6 +5,7 @@ import {
   OnDestroy,
   ViewChild,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -33,6 +34,7 @@ import { autoSplit } from '../../core/signaling/qr-parts';
 import { WakeLockService } from '../../core/media/wake-lock.service';
 import { decodeSdp, encodeSdp } from '../../core/signaling/sdp-codec';
 import { PeerConnectionService } from '../../core/webrtc/peer-connection.service';
+import { ReconnectService } from '../../core/webrtc/reconnect.service';
 import { QrDisplayComponent } from '../../shared/components/qr-display/qr-display.component';
 import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component';
 
@@ -43,6 +45,7 @@ type Phase =
   | 'awaiting-emitter'
   | 'connecting'
   | 'connected'
+  | 'reconnecting'
   | 'failed';
 
 @Component({
@@ -69,6 +72,7 @@ export class ReceiverPage implements OnDestroy {
   private readonly peerService = inject(PeerConnectionService);
   private readonly wakeLock = inject(WakeLockService);
   private readonly audioKeepalive = inject(AudioKeepaliveService);
+  private readonly reconnect = inject(ReconnectService);
 
   protected readonly phase = signal<Phase>('idle');
   protected readonly errorMessage = signal<string | null>(null);
@@ -76,6 +80,7 @@ export class ReceiverPage implements OnDestroy {
   protected readonly needsTapToPlay = signal(false);
 
   protected readonly isFailed = computed(() => this.phase() === 'failed');
+  protected readonly isReconnecting = computed(() => this.reconnect.status() === 'reconnecting');
 
   @ViewChild('audio', { static: false }) audioRef?: ElementRef<HTMLAudioElement>;
 
@@ -84,6 +89,14 @@ export class ReceiverPage implements OnDestroy {
 
   constructor() {
     addIcons({ checkmarkCircle, qrCodeOutline, stopCircleOutline, volumeHighOutline });
+    // Watch reconnect status: on 'gave-up', fail the session
+    effect(() => {
+      if (this.reconnect.status() === 'gave-up') {
+        this.errorMessage.set('Connexion perdue. Relancez l\u2019appairage.');
+        this.phase.set('failed');
+        this.teardown();
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -116,6 +129,7 @@ export class ReceiverPage implements OnDestroy {
       const encoded = await encodeSdp(local.toJSON());
       this.answerParts.set(autoSplit(encoded));
       this.phase.set('awaiting-emitter');
+      this.reconnect.attach(peer);
       this.watchForConnected(peer);
     } catch (err) {
       this.errorMessage.set('Offre invalide : ' + this.toMessage(err));
@@ -195,6 +209,7 @@ export class ReceiverPage implements OnDestroy {
     this.peer = null;
     this.wakeLock.release();
     this.audioKeepalive.stop();
+    this.reconnect.detach();
   }
 
   private toMessage(err: unknown): string {

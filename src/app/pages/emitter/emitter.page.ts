@@ -3,6 +3,7 @@ import {
   Component,
   OnDestroy,
   computed,
+  effect,
   inject,
   signal,
 } from '@angular/core';
@@ -27,6 +28,7 @@ import { WakeLockService } from '../../core/media/wake-lock.service';
 import { autoSplit } from '../../core/signaling/qr-parts';
 import { decodeSdp, encodeSdp } from '../../core/signaling/sdp-codec';
 import { PeerConnectionService } from '../../core/webrtc/peer-connection.service';
+import { ReconnectService } from '../../core/webrtc/reconnect.service';
 import { QrDisplayComponent } from '../../shared/components/qr-display/qr-display.component';
 import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component';
 
@@ -37,6 +39,7 @@ type Phase =
   | 'scanning-answer'
   | 'connecting'
   | 'connected'
+  | 'reconnecting'
   | 'failed';
 
 @Component({
@@ -64,6 +67,7 @@ export class EmitterPage implements OnDestroy {
   private readonly peerService = inject(PeerConnectionService);
   private readonly wakeLock = inject(WakeLockService);
   private readonly audioKeepalive = inject(AudioKeepaliveService);
+  private readonly reconnect = inject(ReconnectService);
 
   protected readonly phase = signal<Phase>('idle');
   protected readonly errorMessage = signal<string | null>(null);
@@ -73,11 +77,20 @@ export class EmitterPage implements OnDestroy {
   protected readonly isAwaitingAnswer = computed(() => this.phase() === 'awaiting-answer');
   protected readonly isScanningAnswer = computed(() => this.phase() === 'scanning-answer');
   protected readonly isFailed = computed(() => this.phase() === 'failed');
+  protected readonly isReconnecting = computed(() => this.reconnect.status() === 'reconnecting');
 
   private peer: RTCPeerConnection | null = null;
 
   constructor() {
     addIcons({ checkmarkCircle, micOutline, qrCodeOutline, stopCircleOutline });
+    // Watch reconnect status: on 'gave-up', fail the session
+    effect(() => {
+      if (this.reconnect.status() === 'gave-up') {
+        this.errorMessage.set('Connexion perdue. Relancez l\u2019appairage.');
+        this.phase.set('failed');
+        this.teardown();
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -130,6 +143,7 @@ export class EmitterPage implements OnDestroy {
       this.phase.set('connecting');
       const answer = await decodeSdp(payload);
       await peer.setRemoteDescription(answer);
+      this.reconnect.attach(peer);
       this.watchForConnected(peer);
     } catch (err) {
       this.errorMessage.set('Réponse invalide : ' + this.toMessage(err));
@@ -169,6 +183,7 @@ export class EmitterPage implements OnDestroy {
     this.mic.release();
     this.wakeLock.release();
     this.audioKeepalive.stop();
+    this.reconnect.detach();
   }
 
   private toMessage(err: unknown): string {
