@@ -1,0 +1,9 @@
+<div class="qr-scanner">
+  <video #video class="qr-scanner__video" muted playsinline></video>
+
+  @if (hasProgress()) {
+    <p class="qr-scanner__progress" aria-live="polite">
+      Scan : {{ progressSig()?.received }} / {{ progressSig()?.total }}
+    </p>
+  }
+</div>

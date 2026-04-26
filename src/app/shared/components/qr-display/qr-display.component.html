@@ -1,0 +1,21 @@
+<div #host class="qr-display">
+  <canvas #canvas class="qr-display__canvas"></canvas>
+
+  @if (isMulti()) {
+    <div class="qr-display__controls">
+      <ion-button fill="clear" (click)="prev()" [disabled]="currentIndex() === 0" aria-label="Précédent">
+        <ion-icon slot="icon-only" name="chevron-back-outline"></ion-icon>
+      </ion-button>
+      <span class="qr-display__counter" aria-live="polite">{{ counter() }}</span>
+      <ion-button
+        fill="clear"
+        (click)="next()"
+        [disabled]="currentIndex() === parts().length - 1"
+        aria-label="Suivant"
+      >
+        <ion-icon slot="icon-only" name="chevron-forward-outline"></ion-icon>
+      </ion-button>
+    </div>
+    <p class="qr-display__hint">Faites défiler tous les QR codes pour un appairage complet.</p>
+  }
+</div>
