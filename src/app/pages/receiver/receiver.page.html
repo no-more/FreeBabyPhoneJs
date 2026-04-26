@@ -1,0 +1,86 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Récepteur</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding receiver-content">
+  <div class="receiver">
+    @switch (phase()) {
+      @case ('idle') {
+        <p class="receiver__intro">
+          Cet appareil va recevoir le son du bébé. Scannez le QR code affiché par l'émetteur pour
+          lancer l'appairage.
+        </p>
+        <ion-button expand="block" size="large" (click)="startOfferScan()">
+          <ion-icon slot="start" name="qr-code-outline" aria-hidden="true"></ion-icon>
+          Scanner le QR code de l'émetteur
+        </ion-button>
+      }
+
+      @case ('scanning-offer') {
+        <p class="receiver__instructions">
+          Pointez la caméra sur le QR code de l'émetteur.
+        </p>
+        <app-qr-scanner
+          (scanned)="onOfferScanned($event)"
+          (error)="onScanError($event)"
+        ></app-qr-scanner>
+        <ion-button expand="block" fill="outline" color="medium" (click)="stop()">Annuler</ion-button>
+      }
+
+      @case ('preparing-answer') {
+        <div class="receiver__preparing">
+          <ion-spinner name="crescent"></ion-spinner>
+          <p>Préparation de la réponse…</p>
+        </div>
+      }
+
+      @case ('awaiting-emitter') {
+        <p class="receiver__instructions">
+          <strong>Étape 2/2.</strong> Sur l'émetteur, scannez ce QR code pour finaliser
+          l'appairage.
+        </p>
+        <app-qr-display [parts]="answerParts()"></app-qr-display>
+        <ion-button expand="block" fill="outline" color="medium" (click)="stop()">Annuler</ion-button>
+      }
+
+      @case ('connecting') {
+        <div class="receiver__preparing">
+          <ion-spinner name="crescent"></ion-spinner>
+          <p>Connexion en cours…</p>
+        </div>
+      }
+
+      @case ('connected') {
+        <div class="receiver__connected">
+          <ion-icon name="checkmark-circle" color="success" aria-hidden="true"></ion-icon>
+          <h2>Connecté</h2>
+          <p>Vous écoutez le son du bébé en direct.</p>
+        </div>
+        <audio #audio autoplay playsinline></audio>
+        @if (needsTapToPlay()) {
+          <ion-button expand="block" (click)="tapToPlay()">
+            <ion-icon slot="start" name="volume-high-outline" aria-hidden="true"></ion-icon>
+            Activer le son
+          </ion-button>
+        }
+        @if (errorMessage()) {
+          <ion-note color="danger" class="receiver__error">{{ errorMessage() }}</ion-note>
+        }
+        <ion-button expand="block" fill="outline" color="medium" (click)="stop()">
+          <ion-icon slot="start" name="stop-circle-outline" aria-hidden="true"></ion-icon>
+          Arrêter l'écoute
+        </ion-button>
+      }
+
+      @case ('failed') {
+        <ion-note color="danger" class="receiver__error">{{ errorMessage() }}</ion-note>
+        <ion-button expand="block" (click)="startOfferScan()">Réessayer</ion-button>
+      }
+    }
+  </div>
+</ion-content>
