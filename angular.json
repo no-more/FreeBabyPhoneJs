@@ -18,16 +18,16 @@
 				"build": {
 					"builder": "@angular-devkit/build-angular:application",
 					"options": {
-						"outputPath": {
-							"base": "www",
-							"browser": ""
-						},
+						"outputPath": "www",
 						"index": "src/index.html",
 						"polyfills": [
 							"src/polyfills.ts"
 						],
 						"tsConfig": "tsconfig.app.json",
 						"inlineStyleLanguage": "scss",
+						"allowedCommonJsDependencies": [
+							"qrcode-generator"
+						],
 						"assets": [
 							{
 								"glob": "**/*",
@@ -140,8 +140,8 @@
 	"cli": {
 		"schematicCollections": [
 			"@ionic/angular-toolkit"
-    ],
-    "analytics": "df709342-ea56-4f7d-b378-0706f412c3de"
+		],
+		"analytics": "df709342-ea56-4f7d-b378-0706f412c3de"
 	},
 	"schematics": {
 		"@ionic/angular-toolkit:component": {

@@ -1,0 +1,48 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Émetteur</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding emitter-content">
+  <div class="emitter">
+    @switch (phase()) {
+      @case ('idle') {
+        <p class="emitter__intro">
+          Cet appareil va capturer le micro et le diffuser au récepteur. Placez-le près du bébé,
+          micro dégagé, et lancez l'appairage.
+        </p>
+        <ion-button expand="block" size="large" (click)="start()">
+          <ion-icon slot="start" name="mic-outline" aria-hidden="true"></ion-icon>
+          Démarrer le micro et générer un QR code
+        </ion-button>
+      }
+
+      @case ('preparing') {
+        <div class="emitter__preparing">
+          <ion-spinner name="crescent"></ion-spinner>
+          <p>Préparation du flux audio…</p>
+        </div>
+      }
+
+      @case ('awaiting-answer') {
+        <p class="emitter__instructions">
+          Sur le récepteur, scannez ce QR code. L'émetteur attend ensuite la réponse.
+        </p>
+        <app-qr-display [parts]="offerParts()"></app-qr-display>
+        <ion-button expand="block" fill="outline" color="medium" (click)="stop()">
+          <ion-icon slot="start" name="stop-circle-outline" aria-hidden="true"></ion-icon>
+          Annuler
+        </ion-button>
+      }
+
+      @case ('failed') {
+        <ion-note color="danger" class="emitter__error">{{ errorMessage() }}</ion-note>
+        <ion-button expand="block" (click)="start()">Réessayer</ion-button>
+      }
+    }
+  </div>
+</ion-content>
