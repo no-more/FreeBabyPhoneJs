@@ -1,6 +1,11 @@
 <ion-header class="ion-no-border">
   <ion-toolbar>
     <ion-title>Babyphone</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="openShareModal()" aria-label="Partager">
+        <ion-icon slot="icon-only" name="share-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
@@ -40,8 +45,8 @@
 
     <footer class="home__footer">
       <p>
-        Astuce&nbsp;: installez l'app sur l'écran d'accueil (« Ajouter à l'écran d'accueil »)
-        pour un fonctionnement plus fiable en arrière-plan.
+        Astuce&nbsp;: installez l'app sur l'écran d'accueil (« Ajouter à l'écran d'accueil ») pour
+        un fonctionnement plus fiable en arrière-plan.
       </p>
     </footer>
   </div>

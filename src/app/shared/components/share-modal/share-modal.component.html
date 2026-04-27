@@ -1,0 +1,35 @@
+<ion-header class="ion-no-border">
+  <ion-toolbar>
+    <ion-title>Partager l'application</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="close()" aria-label="Fermer">
+        <ion-icon slot="icon-only" name="close-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="share-modal">
+    <p class="share-modal__hint">
+      Partagez ce QR code ou le lien pour inviter quelqu'un à utiliser Babyphone sur le même Wi-Fi.
+    </p>
+
+    <div class="share-modal__qr">
+      <canvas #qrCanvas></canvas>
+    </div>
+
+    <div class="share-modal__actions">
+      @if (canShare) {
+        <ion-button expand="block" (click)="share()">
+          <ion-icon slot="start" name="share-outline"></ion-icon>
+          Partager
+        </ion-button>
+      }
+      <ion-button expand="block" fill="outline" (click)="copy()">
+        <ion-icon slot="start" name="copy-outline"></ion-icon>
+        Copier le lien
+      </ion-button>
+    </div>
+  </div>
+</ion-content>
