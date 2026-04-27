@@ -4,10 +4,12 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  overflow: hidden; // Prevent overflow during swipe
+  overflow: hidden;
 
-  &__swipe-container {
-    touch-action: pan-y; // Allow vertical scroll, handle horizontal in JS
+  &__carousel {
+    position: relative;
+    width: 100%;
+    touch-action: pan-y;
     cursor: grab;
     user-select: none;
 
@@ -17,12 +19,19 @@
   }
 
   &__canvas {
-    display: block;
-    max-width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
     height: auto;
     image-rendering: pixelated;
     background: #ffffff;
     border-radius: 8px;
+    pointer-events: none;
+
+    &--current {
+      position: relative;
+    }
   }
 
   &__controls {

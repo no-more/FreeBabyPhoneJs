@@ -1,17 +1,31 @@
 <div #host class="qr-display">
   <div
-    class="qr-display__swipe-container"
-    [style.transform]="transformStyle()"
-    [style.transition]="transitionStyle()"
+    class="qr-display__carousel"
+    (pointerdown)="onPointerDown($event)"
+    (pointermove)="onPointerMove($event)"
+    (pointerup)="onPointerUp($event)"
+    (pointerleave)="onPointerLeave($event)"
+    [attr.aria-label]="isMulti() ? 'Glissez pour naviguer entre les QR codes' : 'QR code'"
   >
     <canvas
-      #canvas
-      class="qr-display__canvas"
-      (pointerdown)="onPointerDown($event)"
-      (pointermove)="onPointerMove($event)"
-      (pointerup)="onPointerUp($event)"
-      (pointerleave)="onPointerLeave($event)"
-      [attr.aria-label]="isMulti() ? 'Glissez pour naviguer entre les QR codes' : 'QR code'"
+      #canvasPrev
+      class="qr-display__canvas qr-display__canvas--prev"
+      [style.transform]="prevTransform()"
+      [style.opacity]="prevOpacity()"
+      [style.transition]="transitionStyle()"
+    ></canvas>
+    <canvas
+      #canvasCurrent
+      class="qr-display__canvas qr-display__canvas--current"
+      [style.transform]="currentTransform()"
+      [style.transition]="transitionStyle()"
+    ></canvas>
+    <canvas
+      #canvasNext
+      class="qr-display__canvas qr-display__canvas--next"
+      [style.transform]="nextTransform()"
+      [style.opacity]="nextOpacity()"
+      [style.transition]="transitionStyle()"
     ></canvas>
   </div>
 
