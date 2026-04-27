@@ -1,33 +1,23 @@
 <div #host class="qr-display">
-  <canvas
-    #canvas
-    class="qr-display__canvas"
-    (pointerdown)="onPointerDown($event)"
-    (pointerup)="onPointerUp($event)"
-    (pointerleave)="onPointerLeave()"
-    [attr.aria-label]="isMulti() ? 'Glissez pour naviguer entre les QR codes' : 'QR code'"
-  ></canvas>
+	<div class="qr-display__swipe-container" [style.transform]="transformStyle()"
+		[style.transition]="transitionStyle()">
+		<canvas #canvas class="qr-display__canvas" (pointerdown)="onPointerDown($event)"
+			(pointermove)="onPointerMove($event)" (pointerup)="onPointerUp($event)"
+			(pointerleave)="onPointerLeave($event)"
+			[attr.aria-label]="isMulti() ? 'Glissez pour naviguer entre les QR codes' : 'QR code'"></canvas>
+	</div>
 
-  @if (isMulti()) {
-    <div class="qr-display__controls">
-      <ion-button
-        fill="clear"
-        (click)="prev()"
-        [disabled]="currentIndex() === 0"
-        aria-label="Précédent"
-      >
-        <ion-icon slot="icon-only" name="chevron-back-outline"></ion-icon>
-      </ion-button>
-      <span class="qr-display__counter" aria-live="polite">{{ counter() }}</span>
-      <ion-button
-        fill="clear"
-        (click)="next()"
-        [disabled]="currentIndex() === parts().length - 1"
-        aria-label="Suivant"
-      >
-        <ion-icon slot="icon-only" name="chevron-forward-outline"></ion-icon>
-      </ion-button>
-    </div>
-    <p class="qr-display__hint">Balayez ou utilisez les boutons pour voir tous les QR codes.</p>
-  }
+	@if (isMulti()) {
+	<div class="qr-display__controls">
+		<ion-button fill="clear" (click)="prev()" [disabled]="currentIndex() === 0" aria-label="Précédent">
+			<ion-icon slot="icon-only" name="chevron-back-outline"></ion-icon>
+		</ion-button>
+		<span class="qr-display__counter" aria-live="polite">{{ counter() }}</span>
+		<ion-button fill="clear" (click)="next()" [disabled]="currentIndex() === parts().length - 1"
+			aria-label="Suivant">
+			<ion-icon slot="icon-only" name="chevron-forward-outline"></ion-icon>
+		</ion-button>
+	</div>
+	<p class="qr-display__hint">Balayez ou utilisez les boutons pour voir tous les QR codes.</p>
+	}
 </div>

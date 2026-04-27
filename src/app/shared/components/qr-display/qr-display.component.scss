@@ -4,6 +4,17 @@
   align-items: center;
   gap: 12px;
   width: 100%;
+  overflow: hidden; // Prevent overflow during swipe
+
+  &__swipe-container {
+    touch-action: pan-y; // Allow vertical scroll, handle horizontal in JS
+    cursor: grab;
+    user-select: none;
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
 
   &__canvas {
     display: block;
