@@ -4,34 +4,37 @@
   align-items: center;
   gap: 12px;
   width: 100%;
-  overflow: hidden;
 
-  &__carousel {
-    position: relative;
+  &__scroll-container {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
     width: 100%;
-    touch-action: pan-y;
-    cursor: grab;
-    user-select: none;
+    gap: 16px;
+    padding: 8px 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; // Firefox
 
-    &:active {
-      cursor: grabbing;
+    &::-webkit-scrollbar {
+      display: none; // Chrome/Safari
     }
   }
 
+  &__item {
+    flex: 0 0 100%;
+    scroll-snap-align: center;
+    display: flex;
+    justify-content: center;
+  }
+
   &__canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
+    display: block;
+    max-width: 100%;
     height: auto;
     image-rendering: pixelated;
     background: #ffffff;
     border-radius: 8px;
-    pointer-events: none;
-
-    &--current {
-      position: relative;
-    }
   }
 
   &__controls {
