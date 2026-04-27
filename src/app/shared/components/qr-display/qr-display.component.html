@@ -2,8 +2,9 @@
   <canvas
     #canvas
     class="qr-display__canvas"
-    (touchstart)="onTouchStart($event)"
-    (touchend)="onTouchEnd($event)"
+    (pointerdown)="onPointerDown($event)"
+    (pointerup)="onPointerUp($event)"
+    (pointerleave)="onPointerLeave()"
     [attr.aria-label]="isMulti() ? 'Glissez pour naviguer entre les QR codes' : 'QR code'"
   ></canvas>
 

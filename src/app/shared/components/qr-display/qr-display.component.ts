@@ -49,40 +49,47 @@ export class QrDisplayComponent implements AfterViewInit, OnChanges, OnDestroy {
   );
 
   private resizeObserver: ResizeObserver | null = null;
-  private touchStartX = 0;
-  private touchStartY = 0;
-  private touchStartTime = 0;
+  private startX = 0;
+  private startY = 0;
+  private startTime = 0;
+  private isDragging = false;
 
   constructor() {
     addIcons({ chevronBackOutline, chevronForwardOutline });
   }
 
-  /** Handle touch start for swipe detection. */
-  protected onTouchStart(event: TouchEvent): void {
-    this.touchStartX = event.touches[0]?.clientX ?? 0;
-    this.touchStartY = event.touches[0]?.clientY ?? 0;
-    this.touchStartTime = Date.now();
+  /** Handle pointer down (touch or mouse) for swipe/drag detection. */
+  protected onPointerDown(event: PointerEvent): void {
+    this.isDragging = true;
+    this.startX = event.clientX;
+    this.startY = event.clientY;
+    this.startTime = Date.now();
   }
 
-  /** Handle touch end for swipe detection. */
-  protected onTouchEnd(event: TouchEvent): void {
-    const touchEndX = event.changedTouches[0]?.clientX ?? 0;
-    const touchEndY = event.changedTouches[0]?.clientY ?? 0;
+  /** Handle pointer up (touch or mouse) for swipe/drag detection. */
+  protected onPointerUp(event: PointerEvent): void {
+    if (!this.isDragging) return;
+    this.isDragging = false;
 
-    const deltaX = touchEndX - this.touchStartX;
-    const deltaY = touchEndY - this.touchStartY;
-    const deltaTime = Date.now() - this.touchStartTime;
+    const deltaX = event.clientX - this.startX;
+    const deltaY = event.clientY - this.startY;
+    const deltaTime = Date.now() - this.startTime;
 
     // Only handle as swipe if horizontal movement dominates and is fast enough
     if (Math.abs(deltaX) > Math.abs(deltaY) && deltaTime < 500) {
       if (deltaX > SWIPE_THRESHOLD) {
-        // Swipe right -> go to previous
+        // Drag/swipe right -> go to previous
         this.prev();
       } else if (deltaX < -SWIPE_THRESHOLD) {
-        // Swipe left -> go to next
+        // Drag/swipe left -> go to next
         this.next();
       }
     }
+  }
+
+  /** Cancel drag if pointer leaves the element. */
+  protected onPointerLeave(): void {
+    this.isDragging = false;
   }
 
   ngAfterViewInit(): void {
