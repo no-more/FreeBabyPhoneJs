@@ -30,8 +30,8 @@ export class QrScannerComponent implements AfterViewInit, OnDestroy {
   readonly resetToken = input<number>(0);
 
   readonly scanned = output<string>();
-  readonly progress = output<{ received: number; total: number }>();
-  readonly error = output<Error>();
+  readonly scanProgress = output<{ received: number; total: number }>();
+  readonly scanError = output<Error>();
 
   @ViewChild('video', { static: true }) videoRef!: ElementRef<HTMLVideoElement>;
 
@@ -70,7 +70,7 @@ export class QrScannerComponent implements AfterViewInit, OnDestroy {
       });
       await this.scanner.start();
     } catch (err) {
-      this.error.emit(err instanceof Error ? err : new Error(String(err)));
+      this.scanError.emit(err instanceof Error ? err : new Error(String(err)));
     }
   }
 
@@ -93,7 +93,7 @@ export class QrScannerComponent implements AfterViewInit, OnDestroy {
       this.scanned.emit(outcome.payload);
     } else {
       this.progressSig.set({ received: outcome.received, total: outcome.total });
-      this.progress.emit({ received: outcome.received, total: outcome.total });
+      this.scanProgress.emit({ received: outcome.received, total: outcome.total });
       this.hapticFeedback(false);
     }
   }

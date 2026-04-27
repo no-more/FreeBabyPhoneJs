@@ -133,8 +133,8 @@ export class VuMeterComponent implements OnInit {
   private tick(): void {
     if (!this.analyser || !this.dataArray) return;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.analyser.getByteFrequencyData(this.dataArray as any);
+    // @ts-expect-error Type mismatch between Uint8Array generics in DOM types
+    this.analyser.getByteFrequencyData(this.dataArray);
     let sum = 0;
     for (let i = 0; i < this.dataArray.length; i++) {
       sum += this.dataArray[i];

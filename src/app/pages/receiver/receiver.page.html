@@ -25,7 +25,7 @@
         <p class="receiver__instructions">Pointez la caméra sur le QR code de l'émetteur.</p>
         <app-qr-scanner
           (scanned)="onOfferScanned($event)"
-          (error)="onScanError($event)"
+          (scanError)="onScanError($event)"
         ></app-qr-scanner>
         <ion-button expand="block" fill="outline" color="medium" (click)="stop()"
           >Annuler</ion-button

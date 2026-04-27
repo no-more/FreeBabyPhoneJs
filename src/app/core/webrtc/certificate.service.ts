@@ -29,7 +29,6 @@ export class CertificateService {
         cert = await RTCPeerConnection.generateCertificate({
           name: 'ECDSA',
           namedCurve: 'P-256',
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           expires: VALIDITY_MS,
         } as unknown as AlgorithmIdentifier);
         await this.save(cert);

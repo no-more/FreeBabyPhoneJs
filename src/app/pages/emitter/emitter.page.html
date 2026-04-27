@@ -52,7 +52,7 @@
         </p>
         <app-qr-scanner
           (scanned)="onAnswerScanned($event)"
-          (error)="onScanError($event)"
+          (scanError)="onScanError($event)"
         ></app-qr-scanner>
         <ion-button expand="block" fill="outline" color="medium" (click)="stop()"
           >Annuler</ion-button
