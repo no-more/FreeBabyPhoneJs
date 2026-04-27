@@ -1,15 +1,9 @@
 <div #host class="qr-display">
-  <div
-    #scrollContainer
-    class="qr-display__scroll-container"
+  <canvas
+    #canvas
+    class="qr-display__canvas"
     [attr.aria-label]="isMulti() ? 'Glissez pour naviguer entre les QR codes' : 'QR code'"
-  >
-    @for (part of parts(); track trackByIndex($index)) {
-      <div class="qr-display__item">
-        <canvas #qrCanvas class="qr-display__canvas"></canvas>
-      </div>
-    }
-  </div>
+  ></canvas>
 
   @if (isMulti()) {
     <div class="qr-display__controls">
