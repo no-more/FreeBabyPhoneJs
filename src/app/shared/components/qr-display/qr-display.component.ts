@@ -17,9 +17,13 @@ import { chevronBackOutline, chevronForwardOutline } from 'ionicons/icons';
 
 import { drawQrToCanvas } from '../../../core/signaling/qr-draw';
 
+/** Minimum swipe distance in pixels to trigger navigation. */
+const SWIPE_THRESHOLD = 50;
+
 /**
  * Renders one or more QR codes in sequence with prev / next controls when
  * there is more than one part. Size adapts to the container width.
+ * Supports swipe gestures for navigation on touch devices.
  */
 @Component({
   selector: 'app-qr-display',
@@ -45,9 +49,40 @@ export class QrDisplayComponent implements AfterViewInit, OnChanges, OnDestroy {
   );
 
   private resizeObserver: ResizeObserver | null = null;
+  private touchStartX = 0;
+  private touchStartY = 0;
+  private touchStartTime = 0;
 
   constructor() {
     addIcons({ chevronBackOutline, chevronForwardOutline });
+  }
+
+  /** Handle touch start for swipe detection. */
+  protected onTouchStart(event: TouchEvent): void {
+    this.touchStartX = event.touches[0]?.clientX ?? 0;
+    this.touchStartY = event.touches[0]?.clientY ?? 0;
+    this.touchStartTime = Date.now();
+  }
+
+  /** Handle touch end for swipe detection. */
+  protected onTouchEnd(event: TouchEvent): void {
+    const touchEndX = event.changedTouches[0]?.clientX ?? 0;
+    const touchEndY = event.changedTouches[0]?.clientY ?? 0;
+
+    const deltaX = touchEndX - this.touchStartX;
+    const deltaY = touchEndY - this.touchStartY;
+    const deltaTime = Date.now() - this.touchStartTime;
+
+    // Only handle as swipe if horizontal movement dominates and is fast enough
+    if (Math.abs(deltaX) > Math.abs(deltaY) && deltaTime < 500) {
+      if (deltaX > SWIPE_THRESHOLD) {
+        // Swipe right -> go to previous
+        this.prev();
+      } else if (deltaX < -SWIPE_THRESHOLD) {
+        // Swipe left -> go to next
+        this.next();
+      }
+    }
   }
 
   ngAfterViewInit(): void {

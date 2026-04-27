@@ -1,9 +1,20 @@
 <div #host class="qr-display">
-  <canvas #canvas class="qr-display__canvas"></canvas>
+  <canvas
+    #canvas
+    class="qr-display__canvas"
+    (touchstart)="onTouchStart($event)"
+    (touchend)="onTouchEnd($event)"
+    [attr.aria-label]="isMulti() ? 'Glissez pour naviguer entre les QR codes' : 'QR code'"
+  ></canvas>
 
   @if (isMulti()) {
     <div class="qr-display__controls">
-      <ion-button fill="clear" (click)="prev()" [disabled]="currentIndex() === 0" aria-label="Précédent">
+      <ion-button
+        fill="clear"
+        (click)="prev()"
+        [disabled]="currentIndex() === 0"
+        aria-label="Précédent"
+      >
         <ion-icon slot="icon-only" name="chevron-back-outline"></ion-icon>
       </ion-button>
       <span class="qr-display__counter" aria-live="polite">{{ counter() }}</span>
@@ -16,6 +27,6 @@
         <ion-icon slot="icon-only" name="chevron-forward-outline"></ion-icon>
       </ion-button>
     </div>
-    <p class="qr-display__hint">Faites défiler tous les QR codes pour un appairage complet.</p>
+    <p class="qr-display__hint">Balayez ou utilisez les boutons pour voir tous les QR codes.</p>
   }
 </div>
