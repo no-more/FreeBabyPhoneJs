@@ -89,10 +89,49 @@ export class QrScannerComponent implements AfterViewInit, OnDestroy {
     const outcome = this.assembler.push(raw);
     if (outcome.complete) {
       this.progressSig.set(null);
+      this.hapticFeedback(true);
       this.scanned.emit(outcome.payload);
     } else {
       this.progressSig.set({ received: outcome.received, total: outcome.total });
       this.progress.emit({ received: outcome.received, total: outcome.total });
+      this.hapticFeedback(false);
+    }
+  }
+
+  /**
+   * Provide haptic feedback on scan detection.
+   * @param complete True for complete payload (stronger feedback), false for partial.
+   */
+  private hapticFeedback(complete: boolean): void {
+    // Vibration pattern: 50ms pulse, or 30ms + 50ms for completion
+    if ('vibrate' in navigator) {
+      try {
+        if (complete) {
+          navigator.vibrate([30, 40, 30]);
+        } else {
+          navigator.vibrate(50);
+        }
+      } catch {
+        // Some browsers may expose vibrate but throw (e.g. iframe without permission)
+      }
+    }
+
+    // Fallback / additional audio beep
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = complete ? 880 : 660; // A5 vs E5
+      osc.type = 'sine';
+      gain.gain.value = 0.1;
+      osc.start();
+      osc.stop(ctx.currentTime + (complete ? 0.15 : 0.08));
+      // Close context shortly after beep to free resources
+      setTimeout(() => ctx.close(), 300);
+    } catch {
+      // Audio not available (no user gesture, or blocked)
     }
   }
 }
