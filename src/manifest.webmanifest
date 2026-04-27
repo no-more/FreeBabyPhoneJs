@@ -1,0 +1,26 @@
+{
+  "name": "Babyphone",
+  "short_name": "Babyphone",
+  "description": "Babyphone WebRTC peer-to-peer (LAN, sans serveur).",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1f2933",
+  "theme_color": "#1f2933",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "assets/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
