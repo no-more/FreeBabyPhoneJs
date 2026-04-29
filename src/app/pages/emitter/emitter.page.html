@@ -17,7 +17,7 @@
 		</p>
 		<ion-button expand="block" size="large" (click)="start()">
 			<ion-icon slot="start" name="mic-outline" aria-hidden="true"></ion-icon>
-			Démarrer la procédure de connection
+			Démarrer le micro et générer un QR code
 		</ion-button>
 		}
 
@@ -68,10 +68,6 @@
 			<p>Le récepteur reçoit le son. Gardez cet appareil allumé près du bébé.</p>
 		</div>
 		<app-vu-meter [stream]="localStream()"></app-vu-meter>
-		<ion-button expand="block" (click)="start()">
-			<ion-icon slot="start" name="mic-outline" aria-hidden="true"></ion-icon>
-			Démarrer le micro
-		</ion-button>
 		<ion-button expand="block" fill="outline" color="medium" (click)="stop()">
 			<ion-icon slot="start" name="stop-circle-outline" aria-hidden="true"></ion-icon>
 			Arrêter la diffusion

@@ -108,12 +108,10 @@ export class EmitterPage implements OnDestroy {
 	protected async start(): Promise<void> {
 		this.errorMessage.set(null);
 		this.phase.set('preparing');
+		this.audioKeepalive.start();
 		try {
 			const stream = await this.mic.acquire();
 			this.localStream.set(stream);
-			// Mute tracks initially - audio won't be sent until connection is established
-			stream.getTracks().forEach((track) => (track.enabled = false));
-
 			const peer = await this.peerService.create();
 			this.peer = peer;
 
@@ -175,12 +173,6 @@ export class EmitterPage implements OnDestroy {
 			if (state === 'connected') {
 				peer.removeEventListener('connectionstatechange', check);
 				this.phase.set('connected');
-				// Enable tracks to start sending audio
-				const stream = this.localStream();
-				if (stream) {
-					stream.getTracks().forEach((track) => (track.enabled = true));
-				}
-				this.audioKeepalive.start();
 				void this.wakeLock.acquire();
 				// Save for quick reconnect on next launch
 				const cached = this.quickReconnect.load();
