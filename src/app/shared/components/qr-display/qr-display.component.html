@@ -1,5 +1,6 @@
 <div class="qr-display">
-	<div #scrollContainer class="qr-display__scroll-container" [class.qr-display__scroll-container--multi]="isMulti()">
+	<div #scrollContainer class="qr-display__scroll-container" [class.qr-display__scroll-container--multi]="isMulti()"
+		style="scroll-snap-type: x mandatory">
 		@for (part of parts(); track $index) {
 		<div class="qr-display__item" [class.qr-display__item--active]="currentIndex() === $index"
 			[attr.aria-label]="'QR code ' + ($index + 1) + ' sur ' + parts().length">

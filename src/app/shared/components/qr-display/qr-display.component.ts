@@ -107,10 +107,13 @@ export class QrDisplayComponent implements AfterViewInit, OnChanges, OnDestroy {
 
 	private onMouseDown(e: MouseEvent): void {
 		if (!this.isMulti()) return;
+		const container = this.scrollContainerRef.nativeElement;
 		this.isDragging = true;
 		this.startX = e.pageX;
-		this.scrollStartLeft = this.scrollContainerRef.nativeElement.scrollLeft;
-		this.scrollContainerRef.nativeElement.style.cursor = 'grabbing';
+		this.scrollStartLeft = container.scrollLeft;
+		container.style.cursor = 'grabbing';
+		// Disable snap during drag for smooth scrolling
+		container.style.scrollSnapType = 'none';
 	}
 
 	private onMouseMove(e: MouseEvent): void {
@@ -124,7 +127,26 @@ export class QrDisplayComponent implements AfterViewInit, OnChanges, OnDestroy {
 	private onMouseUp(): void {
 		if (!this.isDragging) return;
 		this.isDragging = false;
-		this.scrollContainerRef.nativeElement.style.cursor = '';
+		const container = this.scrollContainerRef.nativeElement;
+		container.style.cursor = '';
+		// Re-enable snap and trigger smooth snap to nearest item
+		container.style.scrollSnapType = 'x mandatory';
+		// Force a small scroll to trigger snap animation
+		requestAnimationFrame(() => {
+			this.snapToNearestItem();
+		});
+	}
+
+	private snapToNearestItem(): void {
+		const container = this.scrollContainerRef.nativeElement;
+		const itemWidth = this.getItemWidth();
+		const containerWidth = container.clientWidth;
+		const scrollCenter = container.scrollLeft + containerWidth / 2;
+		const itemCenter = itemWidth / 2;
+		const index = Math.round((scrollCenter - itemCenter) / itemWidth);
+		const clampedIndex = Math.max(0, Math.min(this.parts().length - 1, index));
+		// Smooth scroll to the nearest item
+		this.scrollToIndex(clampedIndex);
 	}
 
 	protected prev(): void {
