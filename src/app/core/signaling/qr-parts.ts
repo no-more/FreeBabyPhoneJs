@@ -125,6 +125,16 @@ export class QrPartsAssembler {
 		if (this.expectedTotal === null) return null;
 		return { received: this.parts.size, total: this.expectedTotal };
 	}
+
+	/** Get list of missing part indices (1-indexed). */
+	missingIndices(): number[] {
+		if (this.expectedTotal === null) return [];
+		const missing: number[] = [];
+		for (let i = 1; i <= this.expectedTotal; i++) {
+			if (!this.parts.has(i)) missing.push(i);
+		}
+		return missing;
+	}
 }
 
 export type AssemblerResult =

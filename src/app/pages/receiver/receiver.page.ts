@@ -85,7 +85,7 @@ export class ReceiverPage implements OnDestroy {
 	protected readonly answerParts = signal<string[]>([]);
 	protected readonly needsTapToPlay = signal(false);
 	protected readonly remoteStream = signal<MediaStream | null>(null);
-	protected readonly scanProgress = signal<{ received: number; total: number } | null>(null);
+	protected readonly scanProgress = signal<{ received: number; total: number; missing: number[] } | null>(null);
 
 	protected readonly isFailed = computed(() => this.phase() === 'failed');
 	protected readonly isReconnecting = computed(() => this.reconnect.status() === 'reconnecting');
@@ -151,8 +151,9 @@ export class ReceiverPage implements OnDestroy {
 				this.watchForConnected(peer);
 			} else {
 				// More parts needed
-				this.scanProgress.set({ received: result.received, total: result.total });
-				void this.showPartReceivedToast(result.received, result.total);
+				const missing = this.qrAssembler.missingIndices();
+				this.scanProgress.set({ received: result.received, total: result.total, missing });
+				void this.showPartReceivedToast(result.received, result.total, missing);
 			}
 		} catch (err) {
 			this.errorMessage.set('Offre invalide : ' + this.toMessage(err));
@@ -168,9 +169,12 @@ export class ReceiverPage implements OnDestroy {
 		this.phase.set('failed');
 	}
 
-	private async showPartReceivedToast(received: number, total: number): Promise<void> {
+	private async showPartReceivedToast(received: number, total: number, missing: number[]): Promise<void> {
+		const remaining = total - received;
+		const remainingText = remaining > 1 ? 'QR codes' : 'QR code';
+		const message = `Partie ${received}/${total} scannée ! Encore ${remaining} ${remainingText} à scanner (${missing.join(', ')})`;
 		const toast = await this.toastController.create({
-			message: `Partie ${received}/${total} reçue. Scannez la partie suivante.`,
+			message,
 			duration: 3000,
 			position: 'top',
 			color: 'primary',
