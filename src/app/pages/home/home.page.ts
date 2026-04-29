@@ -13,6 +13,7 @@ import {
 import { addIcons } from 'ionicons';
 import { headsetOutline, micOutline, shareOutline } from 'ionicons/icons';
 
+import { environment } from '../../../environments/environment';
 import { PreferencesService } from '../../core/storage/preferences.service';
 import type { Role } from '../../core/models';
 import { ShareModalComponent } from '../../shared/components/share-modal/share-modal.component';
@@ -55,4 +56,11 @@ export class HomePage {
 
 	/** Reference to navigator for template access. */
 	protected readonly navigator = navigator;
+
+	/** Version info from environment (commit hash and deploy date). */
+	protected readonly versionInfo = () => {
+		const { commitHash, deployDate } = environment;
+		if (!commitHash || !deployDate) return null;
+		return { commitHash, deployDate };
+	};
 }
