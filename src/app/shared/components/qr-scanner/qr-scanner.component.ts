@@ -1,15 +1,15 @@
 import {
-  AfterViewInit,
-  ChangeDetectionStrategy,
-  Component,
-  ElementRef,
-  OnDestroy,
-  ViewChild,
-  computed,
-  inject,
-  input,
-  output,
-  signal,
+	AfterViewInit,
+	ChangeDetectionStrategy,
+	Component,
+	ElementRef,
+	OnDestroy,
+	ViewChild,
+	computed,
+	inject,
+	input,
+	output,
+	signal,
 } from '@angular/core';
 import QrScanner from 'qr-scanner';
 
@@ -20,118 +20,119 @@ import { QrPartsAssembler } from '../../../core/signaling/qr-parts';
  * `scanned` with the reassembled payload (supports multi-part QR sequences).
  */
 @Component({
-  selector: 'app-qr-scanner',
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  templateUrl: './qr-scanner.component.html',
-  styleUrl: './qr-scanner.component.scss',
+	selector: 'app-qr-scanner',
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	templateUrl: './qr-scanner.component.html',
+	styleUrl: './qr-scanner.component.scss',
 })
 export class QrScannerComponent implements AfterViewInit, OnDestroy {
-  /** Reset assembler state when the reset counter changes. */
-  readonly resetToken = input<number>(0);
+	/** Reset assembler state when the reset counter changes. */
+	readonly resetToken = input<number>(0);
 
-  readonly scanned = output<string>();
-  readonly scanProgress = output<{ received: number; total: number }>();
-  readonly scanError = output<Error>();
+	readonly scanned = output<string>();
+	readonly scanProgress = output<{ received: number; total: number }>();
+	readonly scanError = output<Error>();
 
-  @ViewChild('video', { static: true }) videoRef!: ElementRef<HTMLVideoElement>;
+	@ViewChild('video', { static: true }) videoRef!: ElementRef<HTMLVideoElement>;
 
-  private readonly assembler = new QrPartsAssembler();
-  private scanner: QrScanner | null = null;
-  private lastRaw = '';
-  private lastResetToken = 0;
+	private readonly assembler = new QrPartsAssembler();
+	private scanner: QrScanner | null = null;
+	private lastRaw = '';
+	private lastResetToken = 0;
 
-  protected readonly progressSig = signal<{ received: number; total: number } | null>(null);
-  protected readonly hasProgress = computed(() => this.progressSig() !== null);
+	protected readonly progressSig = signal<{ received: number; total: number } | null>(null);
+	protected readonly hasProgress = computed(() => this.progressSig() !== null);
 
-  private readonly elementRef = inject(ElementRef);
+	private readonly elementRef = inject(ElementRef);
 
-  async ngAfterViewInit(): Promise<void> {
-    await this.start();
-  }
+	async ngAfterViewInit(): Promise<void> {
+		await this.start();
+	}
 
-  ngOnDestroy(): void {
-    this.stop();
-  }
+	ngOnDestroy(): void {
+		this.stop();
+	}
 
-  /** Public stop method, callable from parent via template ref if needed. */
-  stop(): void {
-    this.scanner?.stop();
-    this.scanner?.destroy();
-    this.scanner = null;
-  }
+	/** Public stop method, callable from parent via template ref if needed. */
+	stop(): void {
+		this.scanner?.stop();
+		this.scanner?.destroy();
+		this.scanner = null;
+	}
 
-  private async start(): Promise<void> {
-    try {
-      this.scanner = new QrScanner(this.videoRef.nativeElement, (result) => this.onResult(result), {
-        preferredCamera: 'environment',
-        highlightScanRegion: true,
-        highlightCodeOutline: true,
-        maxScansPerSecond: 5,
-      });
-      await this.scanner.start();
-    } catch (err) {
-      this.scanError.emit(err instanceof Error ? err : new Error(String(err)));
-    }
-  }
+	private async start(): Promise<void> {
+		try {
+			this.scanner = new QrScanner(this.videoRef.nativeElement, (result) => this.onResult(result), {
+				preferredCamera: 'environment',
+				highlightScanRegion: true,
+				highlightCodeOutline: true,
+				maxScansPerSecond: 5,
+				returnDetailedScanResult: true,
+			});
+			await this.scanner.start();
+		} catch (err) {
+			this.scanError.emit(err instanceof Error ? err : new Error(String(err)));
+		}
+	}
 
-  private onResult(result: QrScanner.ScanResult): void {
-    if (this.resetToken() !== this.lastResetToken) {
-      this.lastResetToken = this.resetToken();
-      this.assembler.reset();
-      this.progressSig.set(null);
-      this.lastRaw = '';
-    }
+	private onResult(result: QrScanner.ScanResult): void {
+		if (this.resetToken() !== this.lastResetToken) {
+			this.lastResetToken = this.resetToken();
+			this.assembler.reset();
+			this.progressSig.set(null);
+			this.lastRaw = '';
+		}
 
-    const raw = result.data;
-    if (raw === this.lastRaw) return; // dedupe consecutive scans of the same part
-    this.lastRaw = raw;
+		const raw = result.data;
+		if (raw === this.lastRaw) return; // dedupe consecutive scans of the same part
+		this.lastRaw = raw;
 
-    const outcome = this.assembler.push(raw);
-    if (outcome.complete) {
-      this.progressSig.set(null);
-      this.hapticFeedback(true);
-      this.scanned.emit(outcome.payload);
-    } else {
-      this.progressSig.set({ received: outcome.received, total: outcome.total });
-      this.scanProgress.emit({ received: outcome.received, total: outcome.total });
-      this.hapticFeedback(false);
-    }
-  }
+		const outcome = this.assembler.push(raw);
+		if (outcome.complete) {
+			this.progressSig.set(null);
+			this.hapticFeedback(true);
+			this.scanned.emit(outcome.payload);
+		} else {
+			this.progressSig.set({ received: outcome.received, total: outcome.total });
+			this.scanProgress.emit({ received: outcome.received, total: outcome.total });
+			this.hapticFeedback(false);
+		}
+	}
 
-  /**
-   * Provide haptic feedback on scan detection.
-   * @param complete True for complete payload (stronger feedback), false for partial.
-   */
-  private hapticFeedback(complete: boolean): void {
-    // Vibration pattern: 50ms pulse, or 30ms + 50ms for completion
-    if ('vibrate' in navigator) {
-      try {
-        if (complete) {
-          navigator.vibrate([30, 40, 30]);
-        } else {
-          navigator.vibrate(50);
-        }
-      } catch {
-        // Some browsers may expose vibrate but throw (e.g. iframe without permission)
-      }
-    }
+	/**
+	 * Provide haptic feedback on scan detection.
+	 * @param complete True for complete payload (stronger feedback), false for partial.
+	 */
+	private hapticFeedback(complete: boolean): void {
+		// Vibration pattern: 50ms pulse, or 30ms + 50ms for completion
+		if ('vibrate' in navigator) {
+			try {
+				if (complete) {
+					navigator.vibrate([30, 40, 30]);
+				} else {
+					navigator.vibrate(50);
+				}
+			} catch {
+				// Some browsers may expose vibrate but throw (e.g. iframe without permission)
+			}
+		}
 
-    // Fallback / additional audio beep
-    try {
-      const ctx = new AudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = complete ? 880 : 660; // A5 vs E5
-      osc.type = 'sine';
-      gain.gain.value = 0.1;
-      osc.start();
-      osc.stop(ctx.currentTime + (complete ? 0.15 : 0.08));
-      // Close context shortly after beep to free resources
-      setTimeout(() => ctx.close(), 300);
-    } catch {
-      // Audio not available (no user gesture, or blocked)
-    }
-  }
+		// Fallback / additional audio beep
+		try {
+			const ctx = new AudioContext();
+			const osc = ctx.createOscillator();
+			const gain = ctx.createGain();
+			osc.connect(gain);
+			gain.connect(ctx.destination);
+			osc.frequency.value = complete ? 880 : 660; // A5 vs E5
+			osc.type = 'sine';
+			gain.gain.value = 0.1;
+			osc.start();
+			osc.stop(ctx.currentTime + (complete ? 0.15 : 0.08));
+			// Close context shortly after beep to free resources
+			setTimeout(() => ctx.close(), 300);
+		} catch {
+			// Audio not available (no user gesture, or blocked)
+		}
+	}
 }
