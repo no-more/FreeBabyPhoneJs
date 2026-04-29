@@ -5,13 +5,73 @@
   gap: 12px;
   width: 100%;
 
+  &__scroll-container {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; // Firefox
+    -ms-overflow-style: none; // IE/Edge
+    cursor: grab;
+
+    &:active {
+      cursor: grabbing;
+    }
+
+    // Hide scrollbar on WebKit
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    // Single QR: center without scrolling
+    &:not(&--multi) {
+      justify-content: center;
+    }
+
+    // Multi QR: enable scroll snap
+    &--multi {
+      padding: 0 calc(50% - 160px - 16px); // Center first/last items
+    }
+  }
+
+  &__item {
+    flex: 0 0 auto;
+    scroll-snap-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease, opacity 0.2s ease;
+
+    // Visual feedback for non-active items
+    &:not(&--active) {
+      opacity: 0.7;
+      transform: scale(0.95);
+    }
+
+    &--active {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
   &__canvas {
     display: block;
-    max-width: 100%;
+    max-width: 320px;
+    max-height: 320px;
+    width: 100%;
     height: auto;
     image-rendering: pixelated;
     background: #ffffff;
-    border-radius: 8px;
+    border-radius: 4px;
   }
 
   &__controls {
@@ -32,5 +92,19 @@
     color: var(--ion-color-medium, #6b7280);
     font-size: 13px;
     text-align: center;
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 400px) {
+  .qr-display {
+    &__scroll-container--multi {
+      padding: 0 calc(50% - 140px - 16px);
+    }
+
+    &__canvas {
+      max-width: 280px;
+      max-height: 280px;
+    }
   }
 }

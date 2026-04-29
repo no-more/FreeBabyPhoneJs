@@ -1,30 +1,24 @@
-<div #host class="qr-display">
-  <canvas
-    #canvas
-    class="qr-display__canvas"
-    [attr.aria-label]="isMulti() ? 'Glissez pour naviguer entre les QR codes' : 'QR code'"
-  ></canvas>
+<div class="qr-display">
+	<div #scrollContainer class="qr-display__scroll-container" [class.qr-display__scroll-container--multi]="isMulti()">
+		@for (part of parts(); track $index) {
+		<div class="qr-display__item" [class.qr-display__item--active]="currentIndex() === $index"
+			[attr.aria-label]="'QR code ' + ($index + 1) + ' sur ' + parts().length">
+			<canvas class="qr-display__canvas"></canvas>
+		</div>
+		}
+	</div>
 
-  @if (isMulti()) {
-    <div class="qr-display__controls">
-      <ion-button
-        fill="clear"
-        (click)="prev()"
-        [disabled]="currentIndex() === 0"
-        aria-label="Précédent"
-      >
-        <ion-icon slot="icon-only" name="chevron-back-outline"></ion-icon>
-      </ion-button>
-      <span class="qr-display__counter" aria-live="polite">{{ counter() }}</span>
-      <ion-button
-        fill="clear"
-        (click)="next()"
-        [disabled]="currentIndex() === parts().length - 1"
-        aria-label="Suivant"
-      >
-        <ion-icon slot="icon-only" name="chevron-forward-outline"></ion-icon>
-      </ion-button>
-    </div>
-    <p class="qr-display__hint">Balayez ou utilisez les boutons pour voir tous les QR codes.</p>
-  }
+	@if (isMulti()) {
+	<div class="qr-display__controls">
+		<ion-button fill="clear" (click)="prev()" [disabled]="currentIndex() === 0" aria-label="Précédent">
+			<ion-icon slot="icon-only" name="chevron-back-outline"></ion-icon>
+		</ion-button>
+		<span class="qr-display__counter" aria-live="polite">{{ counter() }}</span>
+		<ion-button fill="clear" (click)="next()" [disabled]="currentIndex() === parts().length - 1"
+			aria-label="Suivant">
+			<ion-icon slot="icon-only" name="chevron-forward-outline"></ion-icon>
+		</ion-button>
+	</div>
+	<p class="qr-display__hint">Balayez ou utilisez les boutons pour naviguer</p>
+	}
 </div>
