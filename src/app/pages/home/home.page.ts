@@ -84,6 +84,13 @@ export class HomePage {
 				console.error('Version installation failed');
 			}
 		});
+
+		// Check for updates when the app becomes visible again
+		document.addEventListener('visibilitychange', () => {
+			if (document.visibilityState === 'visible') {
+				void this.swUpdate?.checkForUpdate();
+			}
+		});
 	}
 
 	private async showUpdateAlert(): Promise<void> {
