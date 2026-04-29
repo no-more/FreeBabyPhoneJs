@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, Optional } from '@angular/core';
 import { Router } from '@angular/router';
+import { SwUpdate } from '@angular/service-worker';
 import {
 	ModalController,
 	IonContent,
@@ -9,9 +10,10 @@ import {
 	IonToolbar,
 	IonButton,
 	IonButtons,
+	IonAlert,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { downloadOutline, headsetOutline, micOutline, shareOutline } from 'ionicons/icons';
+import { downloadOutline, headsetOutline, micOutline, refreshOutline, shareOutline } from 'ionicons/icons';
 
 import { environment } from '../../../environments/environment';
 import { PreferencesService } from '../../core/storage/preferences.service';
@@ -37,13 +39,15 @@ export class HomePage {
 	private readonly router = inject(Router);
 	private readonly prefs = inject(PreferencesService);
 	private readonly modalCtrl = inject(ModalController);
+	private readonly swUpdate = inject(SwUpdate, { optional: true });
 
 	protected readonly canInstall = signal(false);
 	private deferredPrompt: Event | null = null;
 
 	constructor() {
-		addIcons({ micOutline, headsetOutline, shareOutline, downloadOutline });
+		addIcons({ micOutline, headsetOutline, shareOutline, downloadOutline, refreshOutline });
 		this.setupInstallPrompt();
+		this.setupServiceWorkerUpdate();
 	}
 
 	private setupInstallPrompt(): void {
@@ -65,6 +69,49 @@ export class HomePage {
 		const { outcome } = await (this.deferredPrompt as any).userChoice;
 		this.deferredPrompt = null;
 		this.canInstall.set(false);
+	}
+
+	private setupServiceWorkerUpdate(): void {
+		if (!this.swUpdate?.isEnabled) return;
+
+		this.swUpdate.versionUpdates.subscribe(async (event) => {
+			if (event.type === 'VERSION_DETECTED') {
+				console.log('New version detected');
+			} else if (event.type === 'VERSION_READY') {
+				console.log('New version ready');
+				void this.showUpdateAlert();
+			} else if (event.type === 'VERSION_INSTALLATION_FAILED') {
+				console.error('Version installation failed');
+			}
+		});
+	}
+
+	private async showUpdateAlert(): Promise<void> {
+		const alert = await this.modalCtrl.create({
+			component: IonAlert,
+			componentProps: {
+				header: 'Nouvelle version disponible',
+				message: 'Une nouvelle version de l\'application est disponible. Voulez-vous mettre à jour maintenant ?',
+				buttons: [
+					{
+						text: 'Plus tard',
+						role: 'cancel',
+					},
+					{
+						text: 'Mettre à jour',
+						handler: async () => {
+							try {
+								await this.swUpdate?.activateUpdate();
+								window.location.reload();
+							} catch (err) {
+								console.error('Failed to activate update:', err);
+							}
+						},
+					},
+				],
+			},
+		});
+		await alert.present();
 	}
 
 	async openShareModal(): Promise<void> {
