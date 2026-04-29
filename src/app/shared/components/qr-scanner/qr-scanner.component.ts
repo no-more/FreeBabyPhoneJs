@@ -62,15 +62,30 @@ export class QrScannerComponent implements AfterViewInit, OnDestroy {
 
 	private async start(): Promise<void> {
 		try {
-			this.scanner = new QrScanner(this.videoRef.nativeElement, (result) => this.onResult(result), {
+			console.log('[QR Scanner] Starting camera...');
+			const video = this.videoRef.nativeElement;
+			// Ensure video element is clean and ready (like legacy implementation)
+			video.removeAttribute('src');
+			video.setAttribute('playsinline', '');
+			// Small delay to ensure DOM is ready
+			await new Promise((resolve) => setTimeout(resolve, 100));
+			this.scanner = new QrScanner(video, (result) => this.onResult(result), {
 				preferredCamera: 'environment',
 				highlightScanRegion: true,
 				highlightCodeOutline: true,
 				maxScansPerSecond: 5,
 				returnDetailedScanResult: true,
+				onDecodeError: (err) => {
+					// Silent - QR not found in frame is normal, only log real errors
+					if (err !== QrScanner.NO_QR_CODE_FOUND) {
+						console.error('[QR Scanner] Decode error:', err);
+					}
+				},
 			});
 			await this.scanner.start();
+			console.log('[QR Scanner] Camera started successfully');
 		} catch (err) {
+			console.error('[QR Scanner] Failed to start:', err);
 			this.scanError.emit(err instanceof Error ? err : new Error(String(err)));
 		}
 	}
@@ -84,13 +99,16 @@ export class QrScannerComponent implements AfterViewInit, OnDestroy {
 		}
 
 		const raw = result.data;
+		console.log('[QR Scanner] Raw scan:', raw.substring(0, 50) + (raw.length > 50 ? '...' : ''));
 		if (raw === this.lastRaw) return; // dedupe consecutive scans of the same part
 		this.lastRaw = raw;
 
 		const outcome = this.assembler.push(raw);
+		console.log('[QR Scanner] Assembler outcome:', outcome);
 		if (outcome.complete) {
 			this.progressSig.set(null);
 			this.hapticFeedback(true);
+			console.log('[QR Scanner] Emitting scanned payload');
 			this.scanned.emit(outcome.payload);
 		} else {
 			this.progressSig.set({ received: outcome.received, total: outcome.total });

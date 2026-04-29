@@ -14,10 +14,10 @@ const PART_MARKER = /^(\d+)\/(\d+):(.+)$/s;
  * compressed payload). Based on empirical QR-code scan reliability at
  * reasonable sizes on phones.
  */
-const AUTO_SPLIT_THRESHOLD = 500;
+const AUTO_SPLIT_THRESHOLD = 800;
 
 /** Target chunk size used by {@link autoSplit}. */
-const AUTO_SPLIT_CHUNK_SIZE = 300;
+const AUTO_SPLIT_CHUNK_SIZE = 600;
 
 export interface QrPart {
 	index: number;

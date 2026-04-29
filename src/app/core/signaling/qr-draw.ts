@@ -7,28 +7,39 @@ import qrcode from 'qrcode-generator';
  *
  * Error-correction level `M` matches the legacy implementation.
  */
+/**
+ * Quiet zone (margin) in modules. QR spec requires minimum 4 modules of white
+ * space around the QR code for reliable scanning.
+ */
+const QUIET_ZONE_MODULES = 4;
+
 export function drawQrToCanvas(canvas: HTMLCanvasElement, text: string, targetSize: number): void {
-  const qr = qrcode(0, 'M');
-  qr.addData(text);
-  qr.make();
+	const qr = qrcode(0, 'M');
+	qr.addData(text);
+	qr.make();
 
-  const cellCount = qr.getModuleCount();
-  const cellSize = Math.max(1, Math.floor(targetSize / cellCount));
-  const actualSize = cellSize * cellCount;
+	const cellCount = qr.getModuleCount();
+	const totalModules = cellCount + 2 * QUIET_ZONE_MODULES;
+	const cellSize = Math.max(1, Math.floor(targetSize / totalModules));
+	const actualSize = cellSize * totalModules;
+	const offset = cellSize * QUIET_ZONE_MODULES;
 
-  canvas.width = actualSize;
-  canvas.height = actualSize;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+	canvas.width = actualSize;
+	canvas.height = actualSize;
+	const ctx = canvas.getContext('2d');
+	if (!ctx) return;
 
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, actualSize, actualSize);
-  ctx.fillStyle = '#000000';
-  for (let row = 0; row < cellCount; row++) {
-    for (let col = 0; col < cellCount; col++) {
-      if (qr.isDark(row, col)) {
-        ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
-      }
-    }
-  }
+	// Fill entire canvas with white (includes quiet zone)
+	ctx.fillStyle = '#ffffff';
+	ctx.fillRect(0, 0, actualSize, actualSize);
+
+	// Draw QR code with offset for quiet zone
+	ctx.fillStyle = '#000000';
+	for (let row = 0; row < cellCount; row++) {
+		for (let col = 0; col < cellCount; col++) {
+			if (qr.isDark(row, col)) {
+				ctx.fillRect(offset + col * cellSize, offset + row * cellSize, cellSize, cellSize);
+			}
+		}
+	}
 }

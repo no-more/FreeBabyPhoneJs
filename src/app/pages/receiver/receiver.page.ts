@@ -123,8 +123,10 @@ export class ReceiverPage implements OnDestroy {
 	}
 
 	protected async onOfferScanned(payload: string): Promise<void> {
+		console.log('[Receiver] onOfferScanned called with payload:', payload.substring(0, 50) + (payload.length > 50 ? '...' : ''));
 		try {
 			const result = this.qrAssembler.push(payload);
+			console.log('[Receiver] Assembler result:', result);
 
 			if (result.complete) {
 				// All parts received or single QR
