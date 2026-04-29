@@ -40,6 +40,12 @@
 				Astuce&nbsp;: installez l'app sur l'écran d'accueil (« Ajouter à l'écran d'accueil ») pour
 				un fonctionnement plus fiable en arrière-plan.
 			</p>
+			@if (canInstall()) {
+			<ion-button expand="block" (click)="installPwa()">
+				<ion-icon slot="start" name="download-outline" aria-hidden="true"></ion-icon>
+				Installer l'application
+			</ion-button>
+			}
 			@if (versionInfo()) {
 			<p class="home__version">
 				Version&nbsp;: {{ versionInfo()!.commitHash }}<br />

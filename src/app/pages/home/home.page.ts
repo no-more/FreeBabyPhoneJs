@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import {
 	ModalController,
@@ -11,7 +11,7 @@ import {
 	IonButtons,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { headsetOutline, micOutline, shareOutline } from 'ionicons/icons';
+import { downloadOutline, headsetOutline, micOutline, shareOutline } from 'ionicons/icons';
 
 import { environment } from '../../../environments/environment';
 import { PreferencesService } from '../../core/storage/preferences.service';
@@ -38,8 +38,33 @@ export class HomePage {
 	private readonly prefs = inject(PreferencesService);
 	private readonly modalCtrl = inject(ModalController);
 
+	protected readonly canInstall = signal(false);
+	private deferredPrompt: Event | null = null;
+
 	constructor() {
-		addIcons({ micOutline, headsetOutline, shareOutline });
+		addIcons({ micOutline, headsetOutline, shareOutline, downloadOutline });
+		this.setupInstallPrompt();
+	}
+
+	private setupInstallPrompt(): void {
+		window.addEventListener('beforeinstallprompt', (e: Event) => {
+			e.preventDefault();
+			this.deferredPrompt = e;
+			this.canInstall.set(true);
+		});
+
+		window.addEventListener('appinstalled', () => {
+			this.deferredPrompt = null;
+			this.canInstall.set(false);
+		});
+	}
+
+	async installPwa(): Promise<void> {
+		if (!this.deferredPrompt) return;
+		(this.deferredPrompt as any).prompt();
+		const { outcome } = await (this.deferredPrompt as any).userChoice;
+		this.deferredPrompt = null;
+		this.canInstall.set(false);
 	}
 
 	async openShareModal(): Promise<void> {
