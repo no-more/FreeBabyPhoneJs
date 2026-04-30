@@ -25,6 +25,7 @@ import {
 import { addIcons } from 'ionicons';
 import {
 	checkmarkCircle,
+	closeOutline,
 	qrCodeOutline,
 	stopCircleOutline,
 	volumeHighOutline,
@@ -89,6 +90,8 @@ export class ReceiverPage implements OnDestroy {
 	protected readonly scanProgress = signal<{ received: number; total: number; missing: number[] } | null>(null);
 	protected readonly isMuted = signal(false);
 	protected readonly isEmitterMuted = signal(false);
+	protected readonly debugLogs = signal<string[]>([]);
+	protected readonly showDebugPanel = signal(true); // Set to false to hide
 
 	protected readonly isFailed = computed(() => this.phase() === 'failed');
 	protected readonly isReconnecting = computed(() => this.reconnect.status() === 'reconnecting');
@@ -99,8 +102,17 @@ export class ReceiverPage implements OnDestroy {
 	private quickReconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 	private readonly qrAssembler = new QrPartsAssembler();
 
+	private log(message: string): void {
+		console.log('[Receiver]', message);
+		const timestamp = new Date().toLocaleTimeString('fr-FR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+		this.debugLogs.update(logs => {
+			const newLogs = [`${timestamp} ${message}`, ...logs];
+			return newLogs.slice(0, 20); // Keep last 20 logs
+		});
+	}
+
 	constructor() {
-		addIcons({ checkmarkCircle, qrCodeOutline, stopCircleOutline, volumeHighOutline, volumeMuteOutline });
+		addIcons({ checkmarkCircle, closeOutline, qrCodeOutline, stopCircleOutline, volumeHighOutline, volumeMuteOutline });
 		// Watch reconnect status: on 'gave-up', fail the session
 		effect(() => {
 			if (this.reconnect.status() === 'gave-up') {
@@ -126,10 +138,10 @@ export class ReceiverPage implements OnDestroy {
 	}
 
 	protected async onOfferScanned(payload: string): Promise<void> {
-		console.log('[Receiver] onOfferScanned called with payload:', payload.substring(0, 50) + (payload.length > 50 ? '...' : ''));
+		this.log('onOfferScanned called with payload: ' + payload.substring(0, 50) + (payload.length > 50 ? '...' : ''));
 		try {
 			const result = this.qrAssembler.push(payload);
-			console.log('[Receiver] Assembler result:', result);
+			this.log('Assembler result: ' + JSON.stringify(result));
 
 			if (result.complete) {
 				// All parts received or single QR
@@ -216,39 +228,57 @@ export class ReceiverPage implements OnDestroy {
 	}
 
 	private onRemoteTrack(event: RTCTrackEvent): void {
+		this.log('onRemoteTrack fired: ' + event.track.kind + ' ' + event.track.id + ' enabled: ' + event.track.enabled);
 		const stream = event.streams[0] ?? new MediaStream([event.track]);
+		this.log('Stream tracks: ' + JSON.stringify(stream.getTracks().map(t => ({ kind: t.kind, id: t.id.substring(0, 8), enabled: t.enabled, muted: t.muted }))));
 		this.remoteStream.set(stream);
 		queueMicrotask(() => this.attachStreamToAudio());
 		this.monitorEmitterMuteState(event.track);
 	}
 
 	private monitorEmitterMuteState(track: MediaStreamTrack): void {
+		this.log('monitorEmitterMuteState: initial enabled=' + track.enabled + ' muted=' + track.muted);
 		// Initial state
 		this.isEmitterMuted.set(!track.enabled);
 
 		// Listen for mute/unmute events from emitter
 		track.addEventListener('mute', () => {
+			this.log('Remote track muted event fired');
 			this.isEmitterMuted.set(true);
 		});
 		track.addEventListener('unmute', () => {
+			this.log('Remote track unmuted event fired');
 			this.isEmitterMuted.set(false);
+		});
+		track.addEventListener('ended', () => {
+			this.log('Remote track ended event fired');
 		});
 	}
 
 	private attachStreamToAudio(): void {
 		const audio = this.audioRef?.nativeElement;
 		const stream = this.remoteStream();
-		if (!audio || !stream) return;
+		this.log('attachStreamToAudio: audio=' + !!audio + ' stream=' + !!stream + ' phase=' + this.phase());
+		if (!audio || !stream) {
+			this.log('attachStreamToAudio: missing audio or stream, skipping');
+			return;
+		}
 		audio.srcObject = stream;
-		audio.play().catch(() => {
+		this.log('Stream attached to audio element');
+		audio.play().then(() => {
+			this.log('Audio playback started successfully');
+		}).catch((err) => {
+			this.log('Audio playback failed (needs user gesture): ' + err.message);
 			// Browsers may require an explicit user gesture to start playback.
 			this.needsTapToPlay.set(true);
 		});
 	}
 
 	private watchForConnected(peer: RTCPeerConnection): void {
+		this.log('watchForConnected: starting to monitor connection state');
 		const check = (): void => {
 			const state = peer.connectionState;
+			this.log('Connection state changed to: ' + state);
 			if (state === 'connected') {
 				peer.removeEventListener('connectionstatechange', check);
 				this.phase.set('connected');

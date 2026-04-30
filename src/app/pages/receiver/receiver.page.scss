@@ -2,6 +2,58 @@
   --background: var(--ion-background-color, #f5f6f8);
 }
 
+.receiver__debug-panel {
+  background: #1a1a1a;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  overflow: hidden;
+
+  .receiver__debug-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: #2a2a2a;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    ion-button {
+      --padding-start: 4px;
+      --padding-end: 4px;
+      margin: 0;
+      height: 24px;
+
+      ion-icon {
+        font-size: 16px;
+        color: #fff;
+      }
+    }
+  }
+
+  .receiver__debug-logs {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 8px;
+    font-family: monospace;
+    font-size: 11px;
+    line-height: 1.4;
+  }
+
+  .receiver__debug-log {
+    color: #00ff00;
+    padding: 2px 0;
+    border-bottom: 1px solid #333;
+    word-break: break-all;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
 .receiver {
   max-width: 520px;
   margin: 0 auto;
