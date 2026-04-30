@@ -112,11 +112,15 @@ export class EmitterPage implements OnDestroy {
 		this.audioKeepalive.start();
 		try {
 			const stream = await this.mic.acquire();
+			console.log('[Emitter] Mic acquired, tracks:', stream.getTracks().map(t => ({ kind: t.kind, id: t.id.substring(0, 8), enabled: t.enabled, muted: t.muted, readyState: t.readyState })));
 			this.localStream.set(stream);
 			const peer = await this.peerService.create();
 			this.peer = peer;
 
-			stream.getTracks().forEach((track) => peer.addTrack(track, stream));
+			stream.getTracks().forEach((track) => {
+				console.log('[Emitter] Adding track to peer:', track.kind, track.id.substring(0, 8));
+				peer.addTrack(track, stream);
+			});
 
 			const offer = await peer.createOffer();
 			await peer.setLocalDescription(offer);

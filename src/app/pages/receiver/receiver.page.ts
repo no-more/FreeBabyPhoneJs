@@ -265,8 +265,18 @@ export class ReceiverPage implements OnDestroy {
 		}
 		audio.srcObject = stream;
 		this.log('Stream attached to audio element');
+		this.log('Audio element state: volume=' + audio.volume + ' muted=' + audio.muted + ' readyState=' + audio.readyState);
+
+		// Try to unmute the audio track on receiver side
+		stream.getAudioTracks().forEach(track => {
+			this.log('Receiver track before unmute: enabled=' + track.enabled + ' muted=' + track.muted);
+			track.enabled = true;
+			this.log('Receiver track after unmute: enabled=' + track.enabled + ' muted=' + track.muted);
+		});
+
 		audio.play().then(() => {
 			this.log('Audio playback started successfully');
+			this.log('Audio element playing: ' + !audio.paused);
 		}).catch((err) => {
 			this.log('Audio playback failed (needs user gesture): ' + err.message);
 			// Browsers may require an explicit user gesture to start playback.
