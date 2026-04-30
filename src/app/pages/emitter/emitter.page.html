@@ -68,6 +68,10 @@
 			<p>Le récepteur reçoit le son. Gardez cet appareil allumé près du bébé.</p>
 		</div>
 		<app-vu-meter [stream]="localStream()"></app-vu-meter>
+		<ion-button expand="block" [color]="isMuted() ? 'medium' : 'primary'" (click)="toggleMute()">
+			<ion-icon slot="start" [name]="isMuted() ? 'mic-off-outline' : 'mic-outline'" aria-hidden="true"></ion-icon>
+			{{ isMuted() ? 'Réactiver le micro' : 'Couper le micro' }}
+		</ion-button>
 		<ion-button expand="block" fill="outline" color="medium" (click)="stop()">
 			<ion-icon slot="start" name="stop-circle-outline" aria-hidden="true"></ion-icon>
 			Arrêter la diffusion

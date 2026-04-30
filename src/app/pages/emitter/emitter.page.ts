@@ -20,7 +20,7 @@ import {
 	IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle, micOutline, qrCodeOutline, stopCircleOutline } from 'ionicons/icons';
+import { checkmarkCircle, micOffOutline, micOutline, qrCodeOutline, stopCircleOutline } from 'ionicons/icons';
 
 import { AudioKeepaliveService } from '../../core/media/audio-keepalive.service';
 import { MicService } from '../../core/media/mic.service';
@@ -77,6 +77,7 @@ export class EmitterPage implements OnDestroy {
 	protected readonly errorMessage = signal<string | null>(null);
 	protected readonly offerParts = signal<string[]>([]);
 	protected readonly localStream = signal<MediaStream | null>(null);
+	protected readonly isMuted = signal(false);
 
 	protected readonly isPreparing = computed(() => this.phase() === 'preparing');
 	protected readonly isAwaitingAnswer = computed(() => this.phase() === 'awaiting-answer');
@@ -88,7 +89,7 @@ export class EmitterPage implements OnDestroy {
 	private quickReconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
 	constructor() {
-		addIcons({ checkmarkCircle, micOutline, qrCodeOutline, stopCircleOutline });
+		addIcons({ checkmarkCircle, micOffOutline, micOutline, qrCodeOutline, stopCircleOutline });
 		// Watch reconnect status: on 'gave-up', fail the session
 		effect(() => {
 			if (this.reconnect.status() === 'gave-up') {
@@ -139,6 +140,19 @@ export class EmitterPage implements OnDestroy {
 		this.phase.set('idle');
 		this.errorMessage.set(null);
 		this.offerParts.set([]);
+	}
+
+	protected toggleMute(): void {
+		const stream = this.localStream();
+		if (!stream) return;
+
+		const newMutedState = !this.isMuted();
+		this.isMuted.set(newMutedState);
+
+		// Enable/disable audio track without stopping the stream or connection
+		stream.getAudioTracks().forEach((track) => {
+			track.enabled = !newMutedState;
+		});
 	}
 
 	protected startAnswerScan(): void {
