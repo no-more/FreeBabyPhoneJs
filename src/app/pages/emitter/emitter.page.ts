@@ -128,7 +128,7 @@ export class EmitterPage implements OnDestroy {
 			this.peer = peer;
 
 			stream.getTracks().forEach((track) => {
-				this.log('Adding track to peer: ' + track.kind + ' ' + track.id.substring(0, 8));
+				this.log('Adding track to peer: kind=' + track.kind + ' id=' + track.id + ' enabled=' + track.enabled + ' muted=' + track.muted + ' readyState=' + track.readyState);
 				peer.addTrack(track, stream);
 			});
 
@@ -136,9 +136,8 @@ export class EmitterPage implements OnDestroy {
 			await peer.setLocalDescription(offer);
 			await this.peerService.waitForIceGathering(peer);
 
-			// TEMP: Disable keepalive to test if it's causing audio issues
-			// this.audioKeepalive.start();
-			this.log('Audio keepalive DISABLED for testing');
+			this.audioKeepalive.start();
+			this.log('Audio keepalive started');
 
 			const local = peer.localDescription;
 			if (!local) throw new Error('Aucune description locale produite.');

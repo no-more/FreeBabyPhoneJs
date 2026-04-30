@@ -88,7 +88,7 @@ export class ReceiverPage implements OnDestroy {
 	protected readonly needsTapToPlay = signal(false);
 	protected readonly remoteStream = signal<MediaStream | null>(null);
 	protected readonly scanProgress = signal<{ received: number; total: number; missing: number[] } | null>(null);
-	protected readonly isMuted = signal(false);
+	protected readonly isMuted = signal(true); // Start muted like legacy
 	protected readonly isEmitterMuted = signal(false);
 	protected readonly debugLogs = signal<string[]>([]);
 	protected readonly showDebugPanel = signal(true); // Set to false to hide
@@ -228,11 +228,11 @@ export class ReceiverPage implements OnDestroy {
 	}
 
 	private onRemoteTrack(event: RTCTrackEvent): void {
-		this.log('onRemoteTrack fired: ' + event.track.kind + ' ' + event.track.id + ' enabled: ' + event.track.enabled);
+		this.log('onRemoteTrack fired: kind=' + event.track.kind + ' id=' + event.track.id + ' enabled=' + event.track.enabled);
 		const stream = event.streams[0] ?? new MediaStream([event.track]);
-		this.log('Stream tracks: ' + JSON.stringify(stream.getTracks().map(t => ({ kind: t.kind, id: t.id.substring(0, 8), enabled: t.enabled, muted: t.muted }))));
+		this.log('Stream tracks: ' + JSON.stringify(stream.getTracks().map(t => ({ kind: t.kind, id: t.id, enabled: t.enabled, muted: t.muted }))));
 		this.remoteStream.set(stream);
-		queueMicrotask(() => this.attachStreamToAudio());
+		this.attachStreamToAudio(); // Attach immediately like legacy
 		this.monitorEmitterMuteState(event.track);
 	}
 
@@ -260,7 +260,7 @@ export class ReceiverPage implements OnDestroy {
 		const stream = this.remoteStream();
 		this.log('attachStreamToAudio: audio=' + !!audio + ' stream=' + !!stream + ' phase=' + this.phase());
 		if (!audio || !stream) {
-			this.log('attachStreamToAudio: missing audio or stream, skipping');
+			this.log('attachStreamToAudio: missing audio or stream, skipping (will retry on connected)');
 			return;
 		}
 		audio.srcObject = stream;
