@@ -88,6 +88,7 @@ export class ReceiverPage implements OnDestroy {
 	protected readonly remoteStream = signal<MediaStream | null>(null);
 	protected readonly scanProgress = signal<{ received: number; total: number; missing: number[] } | null>(null);
 	protected readonly isMuted = signal(false);
+	protected readonly isEmitterMuted = signal(false);
 
 	protected readonly isFailed = computed(() => this.phase() === 'failed');
 	protected readonly isReconnecting = computed(() => this.reconnect.status() === 'reconnecting');
@@ -218,6 +219,20 @@ export class ReceiverPage implements OnDestroy {
 		const stream = event.streams[0] ?? new MediaStream([event.track]);
 		this.remoteStream.set(stream);
 		queueMicrotask(() => this.attachStreamToAudio());
+		this.monitorEmitterMuteState(event.track);
+	}
+
+	private monitorEmitterMuteState(track: MediaStreamTrack): void {
+		// Initial state
+		this.isEmitterMuted.set(!track.enabled);
+
+		// Listen for mute/unmute events from emitter
+		track.addEventListener('mute', () => {
+			this.isEmitterMuted.set(true);
+		});
+		track.addEventListener('unmute', () => {
+			this.isEmitterMuted.set(false);
+		});
 	}
 
 	private attachStreamToAudio(): void {

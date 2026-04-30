@@ -55,6 +55,12 @@
 			<h2>Connecté</h2>
 			<p>Vous écoutez le son du bébé en direct.</p>
 		</div>
+		@if (isEmitterMuted()) {
+		<ion-note color="warning" class="receiver__status">
+			<ion-icon name="mic-off-outline" aria-hidden="true"></ion-icon>
+			Le micro de l'émetteur est coupé
+		</ion-note>
+		}
 		<app-vu-meter [stream]="remoteStream()"></app-vu-meter>
 		<audio #audio autoplay playsinline></audio>
 		@if (needsTapToPlay()) {
