@@ -120,8 +120,6 @@ export class EmitterPage implements OnDestroy {
 	protected async start(): Promise<void> {
 		this.errorMessage.set(null);
 		this.phase.set('preparing');
-		this.audioKeepalive.start();
-		this.log('Audio keepalive started');
 		try {
 			const stream = await this.mic.acquire();
 			this.log('Mic acquired, tracks: ' + JSON.stringify(stream.getTracks().map(t => ({ kind: t.kind, id: t.id.substring(0, 8), enabled: t.enabled, muted: t.muted, readyState: t.readyState }))));
@@ -137,6 +135,10 @@ export class EmitterPage implements OnDestroy {
 			const offer = await peer.createOffer();
 			await peer.setLocalDescription(offer);
 			await this.peerService.waitForIceGathering(peer);
+
+			// TEMP: Disable keepalive to test if it's causing audio issues
+			// this.audioKeepalive.start();
+			this.log('Audio keepalive DISABLED for testing');
 
 			const local = peer.localDescription;
 			if (!local) throw new Error('Aucune description locale produite.');
