@@ -148,12 +148,18 @@ export class ReceiverPage implements OnDestroy {
 				this.scanProgress.set(null);
 				this.phase.set('preparing-answer');
 				const offer = await decodeSdp(result.payload);
+				this.log('Decoded SDP (offer): ' + (offer.sdp?.substring(0, 200) || 'no sdp') + '...');
+				this.log('Decoded SDP tracks: ' + (offer.sdp?.match(/a=mid:/g) || []).length + ' media sections');
 				const peer = await this.peerService.create();
 				this.peer = peer;
 
 				peer.addEventListener('track', (event) => this.onRemoteTrack(event));
 
 				await peer.setRemoteDescription(offer);
+				this.log('Peer transceivers after setRemote: ' + peer.getTransceivers().length);
+				peer.getTransceivers().forEach((t, i) => {
+					this.log('Transceiver ' + i + ': mid=' + (t.mid || 'null') + ' currentDirection=' + (t.currentDirection || 'null') + ' direction=' + (t.direction || 'null'));
+				});
 				const answer = await peer.createAnswer();
 				await peer.setLocalDescription(answer);
 				await this.peerService.waitForIceGathering(peer);

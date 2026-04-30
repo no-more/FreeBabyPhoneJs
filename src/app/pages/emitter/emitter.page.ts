@@ -142,6 +142,9 @@ export class EmitterPage implements OnDestroy {
 			const local = peer.localDescription;
 			if (!local) throw new Error('Aucune description locale produite.');
 
+			this.log('Local SDP (offer): ' + local.sdp.substring(0, 200) + '...');
+			this.log('Local SDP tracks: ' + (local.sdp.match(/a=mid:/g) || []).length + ' media sections');
+
 			const payload = await encodeSdp(local.toJSON());
 			this.offerParts.set(autoSplit(payload));
 			this.phase.set('awaiting-answer');
