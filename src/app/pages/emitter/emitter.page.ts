@@ -130,6 +130,13 @@ export class EmitterPage implements OnDestroy {
 			stream.getTracks().forEach((track) => {
 				this.log('Adding track to peer: kind=' + track.kind + ' id=' + track.id + ' enabled=' + track.enabled + ' muted=' + track.muted + ' readyState=' + track.readyState);
 				peer.addTrack(track, stream);
+				// Log mute events from the track
+				track.addEventListener('mute', () => {
+					this.log('Track muted event: id=' + track.id);
+				});
+				track.addEventListener('unmute', () => {
+					this.log('Track unmuted event: id=' + track.id);
+				});
 			});
 
 			const offer = await peer.createOffer();
@@ -139,11 +146,22 @@ export class EmitterPage implements OnDestroy {
 			this.audioKeepalive.start();
 			this.log('Audio keepalive started');
 
+			// Log ICE candidates
+			peer.addEventListener('icecandidate', (event) => {
+				if (event.candidate) {
+					this.log('ICE candidate: ' + event.candidate.candidate.substring(0, 50) + '...');
+				} else {
+					this.log('ICE candidate gathering complete');
+				}
+			});
+
 			const local = peer.localDescription;
 			if (!local) throw new Error('Aucune description locale produite.');
 
 			this.log('Local SDP (offer): ' + local.sdp.substring(0, 200) + '...');
 			this.log('Local SDP tracks: ' + (local.sdp.match(/a=mid:/g) || []).length + ' media sections');
+			console.log('[EMITTER FULL SDP]', local.sdp);
+			console.log('[EMITTER ICE CANDIDATES]', local.sdp.match(/a=candidate:[^\r\n]+/g)?.length || 0, 'candidates');
 
 			const payload = await encodeSdp(local.toJSON());
 			this.offerParts.set(autoSplit(payload));
@@ -169,12 +187,13 @@ export class EmitterPage implements OnDestroy {
 		const newMutedState = !this.isMuted();
 		this.isMuted.set(newMutedState);
 		this.log('Toggle mute: ' + (newMutedState ? 'muting' : 'unmuting'));
-
+		this.log('nb audio tracks: ' + stream.getAudioTracks().length);
 		// Enable/disable audio track without stopping the stream or connection
 		stream.getAudioTracks().forEach((track) => {
 			this.log('Track before toggle: enabled=' + track.enabled + ' muted=' + track.muted);
 			track.enabled = !newMutedState;
 			this.log('Track after toggle: enabled=' + track.enabled + ' muted=' + track.muted);
+			this.log('Track state after toggle: enabled=' + track.enabled + ' muted=' + track.muted + ' readyState=' + track.readyState);
 		});
 	}
 
