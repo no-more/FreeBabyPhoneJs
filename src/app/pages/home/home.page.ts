@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { SwUpdate } from '@angular/service-worker';
 import {
 	ModalController,
+	AlertController,
 	IonContent,
 	IonHeader,
 	IonIcon,
@@ -10,7 +11,6 @@ import {
 	IonToolbar,
 	IonButton,
 	IonButtons,
-	IonAlert,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { downloadOutline, headsetOutline, micOutline, refreshOutline, shareOutline } from 'ionicons/icons';
@@ -39,6 +39,7 @@ export class HomePage {
 	private readonly router = inject(Router);
 	private readonly prefs = inject(PreferencesService);
 	private readonly modalCtrl = inject(ModalController);
+	private readonly alertCtrl = inject(AlertController);
 	private readonly swUpdate = inject(SwUpdate, { optional: true });
 
 	protected readonly canInstall = signal(false);
@@ -94,29 +95,26 @@ export class HomePage {
 	}
 
 	private async showUpdateAlert(): Promise<void> {
-		const alert = await this.modalCtrl.create({
-			component: IonAlert,
-			componentProps: {
-				header: 'Nouvelle version disponible',
-				message: 'Une nouvelle version de l\'application est disponible. Voulez-vous mettre à jour maintenant ?',
-				buttons: [
-					{
-						text: 'Plus tard',
-						role: 'cancel',
+		const alert = await this.alertCtrl.create({
+			header: 'Nouvelle version disponible',
+			message: 'Une nouvelle version de l\'application est disponible. Voulez-vous mettre à jour maintenant ?',
+			buttons: [
+				{
+					text: 'Plus tard',
+					role: 'cancel',
+				},
+				{
+					text: 'Mettre à jour',
+					handler: async () => {
+						try {
+							await this.swUpdate?.activateUpdate();
+							window.location.reload();
+						} catch (err) {
+							console.error('Failed to activate update:', err);
+						}
 					},
-					{
-						text: 'Mettre à jour',
-						handler: async () => {
-							try {
-								await this.swUpdate?.activateUpdate();
-								window.location.reload();
-							} catch (err) {
-								console.error('Failed to activate update:', err);
-							}
-						},
-					},
-				],
-			},
+				},
+			],
 		});
 		await alert.present();
 	}
