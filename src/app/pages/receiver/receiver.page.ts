@@ -234,7 +234,11 @@ export class ReceiverPage implements OnDestroy {
 	}
 
 	private onRemoteTrack(event: RTCTrackEvent): void {
+		const peer = this.peer;
 		this.log('onRemoteTrack fired: kind=' + event.track.kind + ' id=' + event.track.id + ' enabled=' + event.track.enabled);
+		if (peer) {
+			this.log('Connection state at track event: ' + peer.connectionState + ', ICE: ' + peer.iceConnectionState + ', Signaling: ' + peer.signalingState);
+		}
 		const stream = event.streams[0] ?? new MediaStream([event.track]);
 		this.log('Stream tracks: ' + JSON.stringify(stream.getTracks().map(t => ({ kind: t.kind, id: t.id, enabled: t.enabled, muted: t.muted }))));
 		this.remoteStream.set(stream);
@@ -292,11 +296,16 @@ export class ReceiverPage implements OnDestroy {
 
 	private watchForConnected(peer: RTCPeerConnection): void {
 		this.log('watchForConnected: starting to monitor connection state');
+		peer.addEventListener('iceconnectionstatechange', () => {
+			this.log('ICE connection state: ' + peer.iceConnectionState);
+		});
+		peer.addEventListener('signalingstatechange', () => {
+			this.log('Signaling state: ' + peer.signalingState);
+		});
 		const check = (): void => {
 			const state = peer.connectionState;
-			this.log('Connection state changed to: ' + state);
-			if (state === 'connected') {
-				peer.removeEventListener('connectionstatechange', check);
+			this.log('Connection state: ' + state + ', ICE: ' + peer.iceConnectionState + ', Signaling: ' + peer.signalingState);
+			if (state === 'connected' && this.phase() !== 'connected') {
 				this.phase.set('connected');
 				void this.wakeLock.acquire();
 				// Save for quick reconnect on next launch

@@ -207,11 +207,17 @@ export class EmitterPage implements OnDestroy {
 
 	private watchForConnected(peer: RTCPeerConnection): void {
 		this.log('watchForConnected: starting to monitor connection state');
+		// Log ICE state changes too
+		peer.addEventListener('iceconnectionstatechange', () => {
+			this.log('ICE connection state: ' + peer.iceConnectionState);
+		});
+		peer.addEventListener('signalingstatechange', () => {
+			this.log('Signaling state: ' + peer.signalingState);
+		});
 		const check = (): void => {
 			const state = peer.connectionState;
-			this.log('Connection state changed to: ' + state);
-			if (state === 'connected') {
-				peer.removeEventListener('connectionstatechange', check);
+			this.log('Connection state: ' + state + ', ICE: ' + peer.iceConnectionState + ', Signaling: ' + peer.signalingState);
+			if (state === 'connected' && this.phase() !== 'connected') {
 				this.phase.set('connected');
 				void this.wakeLock.acquire();
 				// Save for quick reconnect on next launch
