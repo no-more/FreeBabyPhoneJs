@@ -28,6 +28,7 @@ import {
 	qrCodeOutline,
 	stopCircleOutline,
 	volumeHighOutline,
+	volumeMuteOutline,
 } from 'ionicons/icons';
 
 import { AudioKeepaliveService } from '../../core/media/audio-keepalive.service';
@@ -86,6 +87,7 @@ export class ReceiverPage implements OnDestroy {
 	protected readonly needsTapToPlay = signal(false);
 	protected readonly remoteStream = signal<MediaStream | null>(null);
 	protected readonly scanProgress = signal<{ received: number; total: number; missing: number[] } | null>(null);
+	protected readonly isMuted = signal(false);
 
 	protected readonly isFailed = computed(() => this.phase() === 'failed');
 	protected readonly isReconnecting = computed(() => this.reconnect.status() === 'reconnecting');
@@ -97,7 +99,7 @@ export class ReceiverPage implements OnDestroy {
 	private readonly qrAssembler = new QrPartsAssembler();
 
 	constructor() {
-		addIcons({ checkmarkCircle, qrCodeOutline, stopCircleOutline, volumeHighOutline });
+		addIcons({ checkmarkCircle, qrCodeOutline, stopCircleOutline, volumeHighOutline, volumeMuteOutline });
 		// Watch reconnect status: on 'gave-up', fail the session
 		effect(() => {
 			if (this.reconnect.status() === 'gave-up') {
@@ -201,6 +203,15 @@ export class ReceiverPage implements OnDestroy {
 		} catch (err) {
 			this.errorMessage.set('Lecture audio refusée : ' + this.toMessage(err));
 		}
+	}
+
+	protected toggleMute(): void {
+		const audio = this.audioRef?.nativeElement;
+		if (!audio) return;
+
+		const newMutedState = !this.isMuted();
+		this.isMuted.set(newMutedState);
+		audio.muted = newMutedState;
 	}
 
 	private onRemoteTrack(event: RTCTrackEvent): void {

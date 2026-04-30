@@ -63,6 +63,11 @@
 			Activer le son
 		</ion-button>
 		}
+		<ion-button expand="block" [color]="isMuted() ? 'medium' : 'primary'" (click)="toggleMute()">
+			<ion-icon slot="start" [name]="isMuted() ? 'volume-mute-outline' : 'volume-high-outline'"
+				aria-hidden="true"></ion-icon>
+			{{ isMuted() ? 'Réactiver le son' : 'Couper le son' }}
+		</ion-button>
 		@if (errorMessage()) {
 		<ion-note color="danger" class="receiver__error">{{ errorMessage() }}</ion-note>
 		}
