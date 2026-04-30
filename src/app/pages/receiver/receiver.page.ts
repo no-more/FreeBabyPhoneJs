@@ -155,13 +155,13 @@ export class ReceiverPage implements OnDestroy {
 
 				peer.addEventListener('track', (event) => this.onRemoteTrack(event));
 
-				await peer.setRemoteDescription(offer);
+				await peer.setRemoteDescription(new RTCSessionDescription(offer));
 				this.log('Peer transceivers after setRemote: ' + peer.getTransceivers().length);
 				peer.getTransceivers().forEach((t, i) => {
 					this.log('Transceiver ' + i + ': mid=' + (t.mid || 'null') + ' currentDirection=' + (t.currentDirection || 'null') + ' direction=' + (t.direction || 'null'));
 				});
 				const answer = await peer.createAnswer();
-				await peer.setLocalDescription(answer);
+				await peer.setLocalDescription(new RTCSessionDescription(answer));
 				await this.peerService.waitForIceGathering(peer);
 
 				const local = peer.localDescription;

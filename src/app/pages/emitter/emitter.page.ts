@@ -133,7 +133,7 @@ export class EmitterPage implements OnDestroy {
 			});
 
 			const offer = await peer.createOffer();
-			await peer.setLocalDescription(offer);
+			await peer.setLocalDescription(new RTCSessionDescription(offer));
 			await this.peerService.waitForIceGathering(peer);
 
 			this.audioKeepalive.start();
@@ -189,7 +189,7 @@ export class EmitterPage implements OnDestroy {
 			this.phase.set('connecting');
 			this.log('Answer scanned, setting remote description');
 			const answer = await decodeSdp(payload);
-			await peer.setRemoteDescription(answer);
+			await peer.setRemoteDescription(new RTCSessionDescription(answer));
 			this.reconnect.attach(peer);
 			this.watchForConnected(peer);
 		} catch (err) {
