@@ -20,7 +20,7 @@ import {
 	IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle, micOffOutline, micOutline, qrCodeOutline, stopCircleOutline } from 'ionicons/icons';
+import { checkmarkCircle, closeOutline, micOffOutline, micOutline, qrCodeOutline, stopCircleOutline } from 'ionicons/icons';
 
 import { AudioKeepaliveService } from '../../core/media/audio-keepalive.service';
 import { MicService } from '../../core/media/mic.service';
@@ -78,6 +78,8 @@ export class EmitterPage implements OnDestroy {
 	protected readonly offerParts = signal<string[]>([]);
 	protected readonly localStream = signal<MediaStream | null>(null);
 	protected readonly isMuted = signal(false);
+	protected readonly debugLogs = signal<string[]>([]);
+	protected readonly showDebugPanel = signal(true);
 
 	protected readonly isPreparing = computed(() => this.phase() === 'preparing');
 	protected readonly isAwaitingAnswer = computed(() => this.phase() === 'awaiting-answer');
@@ -88,8 +90,17 @@ export class EmitterPage implements OnDestroy {
 	private peer: RTCPeerConnection | null = null;
 	private quickReconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
+	private log(message: string): void {
+		console.log('[Emitter]', message);
+		const timestamp = new Date().toLocaleTimeString('fr-FR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+		this.debugLogs.update(logs => {
+			const newLogs = [`${timestamp} ${message}`, ...logs];
+			return newLogs.slice(0, 20);
+		});
+	}
+
 	constructor() {
-		addIcons({ checkmarkCircle, micOffOutline, micOutline, qrCodeOutline, stopCircleOutline });
+		addIcons({ checkmarkCircle, closeOutline, micOffOutline, micOutline, qrCodeOutline, stopCircleOutline });
 		// Watch reconnect status: on 'gave-up', fail the session
 		effect(() => {
 			if (this.reconnect.status() === 'gave-up') {
@@ -110,15 +121,16 @@ export class EmitterPage implements OnDestroy {
 		this.errorMessage.set(null);
 		this.phase.set('preparing');
 		this.audioKeepalive.start();
+		this.log('Audio keepalive started');
 		try {
 			const stream = await this.mic.acquire();
-			console.log('[Emitter] Mic acquired, tracks:', stream.getTracks().map(t => ({ kind: t.kind, id: t.id.substring(0, 8), enabled: t.enabled, muted: t.muted, readyState: t.readyState })));
+			this.log('Mic acquired, tracks: ' + JSON.stringify(stream.getTracks().map(t => ({ kind: t.kind, id: t.id.substring(0, 8), enabled: t.enabled, muted: t.muted, readyState: t.readyState }))));
 			this.localStream.set(stream);
 			const peer = await this.peerService.create();
 			this.peer = peer;
 
 			stream.getTracks().forEach((track) => {
-				console.log('[Emitter] Adding track to peer:', track.kind, track.id.substring(0, 8));
+				this.log('Adding track to peer: ' + track.kind + ' ' + track.id.substring(0, 8));
 				peer.addTrack(track, stream);
 			});
 
@@ -152,10 +164,13 @@ export class EmitterPage implements OnDestroy {
 
 		const newMutedState = !this.isMuted();
 		this.isMuted.set(newMutedState);
+		this.log('Toggle mute: ' + (newMutedState ? 'muting' : 'unmuting'));
 
 		// Enable/disable audio track without stopping the stream or connection
 		stream.getAudioTracks().forEach((track) => {
+			this.log('Track before toggle: enabled=' + track.enabled + ' muted=' + track.muted);
 			track.enabled = !newMutedState;
+			this.log('Track after toggle: enabled=' + track.enabled + ' muted=' + track.muted);
 		});
 	}
 
@@ -168,6 +183,7 @@ export class EmitterPage implements OnDestroy {
 		if (!peer) return;
 		try {
 			this.phase.set('connecting');
+			this.log('Answer scanned, setting remote description');
 			const answer = await decodeSdp(payload);
 			await peer.setRemoteDescription(answer);
 			this.reconnect.attach(peer);
@@ -186,8 +202,10 @@ export class EmitterPage implements OnDestroy {
 	}
 
 	private watchForConnected(peer: RTCPeerConnection): void {
+		this.log('watchForConnected: starting to monitor connection state');
 		const check = (): void => {
 			const state = peer.connectionState;
+			this.log('Connection state changed to: ' + state);
 			if (state === 'connected') {
 				peer.removeEventListener('connectionstatechange', check);
 				this.phase.set('connected');
