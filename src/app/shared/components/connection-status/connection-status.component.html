@@ -1,0 +1,95 @@
+@if (peer()) {
+<div class="status-widget">
+	<div class="status-header">
+		<ion-icon name="pulse-outline" class="status-icon"></ion-icon>
+		<span class="status-title">État de la connexion</span>
+		<span class="status-time">{{ status().lastUpdated }}</span>
+	</div>
+
+	<div class="status-grid">
+		<!-- Connection State -->
+		<div class="status-item">
+			<span class="status-label">Connexion</span>
+			<span class="status-value" [attr.data-state]="status().connectionState">
+				{{ getConnectionStateLabel(status().connectionState) }}
+			</span>
+		</div>
+
+		<!-- ICE State -->
+		<div class="status-item">
+			<span class="status-label">Réseau (ICE)</span>
+			<span class="status-value" [attr.data-state]="status().iceState">
+				{{ getIceStateLabel(status().iceState) }}
+			</span>
+		</div>
+
+		<!-- Signaling State -->
+		<div class="status-item">
+			<span class="status-label">Signalisation</span>
+			<span class="status-value">{{ getSignalingStateLabel(status().signalingState) }}</span>
+		</div>
+
+		<!-- Quality -->
+		@if (role() === 'receiver' && status().quality !== 'unknown') {
+		<div class="status-item">
+			<span class="status-label">Qualité audio</span>
+			<span class="status-badge" [attr.data-quality]="status().quality">
+				{{ getQualityLabel(status().quality) }}
+			</span>
+		</div>
+		}
+
+		<!-- RTT -->
+		@if (status().rtt !== null) {
+		<div class="status-item">
+			<span class="status-label">Latence</span>
+			<span class="status-value">{{ status().rtt }} ms</span>
+		</div>
+		}
+
+		<!-- Tracks -->
+		<div class="status-item">
+			<span class="status-label">Pistes audio</span>
+			<span class="status-value">
+				@if (role() === 'emitter') {
+				{{ status().localTracks }} locale
+				} @else {
+				{{ status().remoteTracks }} reçue
+				}
+			</span>
+		</div>
+
+		<!-- Mute Status -->
+		@if (role() === 'emitter') {
+		<div class="status-item">
+			<span class="status-label">Micro</span>
+			<span class="status-badge" [attr.data-muted]="isMuted()">
+				{{ isMuted() ? 'Coupé' : 'Actif' }}
+			</span>
+		</div>
+		}
+
+		<!-- Reconnect Status -->
+		@if (reconnectStatus()) {
+		<div class="status-item status-item--warning">
+			<span class="status-label">Reconnexion</span>
+			<span class="status-value">{{ reconnectStatus() }}</span>
+		</div>
+		}
+	</div>
+
+	<!-- Data Transfer (only when connected) -->
+	@if (status().connectionState === 'connected') {
+	<div class="status-footer">
+		@if (role() === 'receiver') {
+		<span>Reçu : {{ formatBytes(status().bytesReceived) }}</span>
+		} @else {
+		<span>Envoyé : {{ formatBytes(status().bytesSent) }}</span>
+		}
+		@if (status().packetsLost > 0) {
+		<span class="packet-loss">Pertes : {{ status().packetsLost }} pkt</span>
+		}
+	</div>
+	}
+</div>
+}

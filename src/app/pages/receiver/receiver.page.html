@@ -9,21 +9,6 @@
 
 <ion-content class="ion-padding receiver-content">
 	<div class="receiver">
-		@if (showDebugPanel()) {
-		<div class="receiver__debug-panel">
-			<div class="receiver__debug-header">
-				<span>Debug Logs</span>
-				<ion-button fill="clear" size="small" (click)="showDebugPanel.set(false)">
-					<ion-icon name="close-outline" slot="icon-only"></ion-icon>
-				</ion-button>
-			</div>
-			<div class="receiver__debug-logs">
-				@for (log of debugLogs(); track $index) {
-				<div class="receiver__debug-log">{{ log }}</div>
-				}
-			</div>
-		</div>
-		}
 		@switch (phase()) {
 		@case ('idle') {
 		<p class="receiver__intro">
@@ -34,11 +19,6 @@
 			<ion-icon slot="start" name="qr-code-outline" aria-hidden="true"></ion-icon>
 			Scanner le QR code de l'émetteur
 		</ion-button>
-		@if (!showDebugPanel()) {
-		<ion-button expand="block" fill="outline" size="small" (click)="showDebugPanel.set(true)">
-			Afficher les logs de debug
-		</ion-button>
-		}
 		}
 
 		@case ('scanning-offer') {
@@ -75,6 +55,9 @@
 			<h2>Connecté</h2>
 			<p>Vous écoutez le son du bébé en direct.</p>
 		</div>
+		<app-connection-status [peer]="peerInstance" role="receiver" [remoteStream]="remoteStream()"
+			[isMuted]="isMuted()" [reconnectStatus]="reconnectStatusSignal()">
+		</app-connection-status>
 		@if (isEmitterMuted()) {
 		<ion-note color="warning" class="receiver__status">
 			<ion-icon name="mic-off-outline" aria-hidden="true"></ion-icon>
@@ -101,11 +84,6 @@
 			<ion-icon slot="start" name="stop-circle-outline" aria-hidden="true"></ion-icon>
 			Arrêter l'écoute
 		</ion-button>
-		@if (!showDebugPanel()) {
-		<ion-button expand="block" fill="outline" size="small" (click)="showDebugPanel.set(true)">
-			Afficher les logs de debug
-		</ion-button>
-		}
 		}
 
 		@case ('failed') {

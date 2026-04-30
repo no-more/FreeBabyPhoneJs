@@ -9,21 +9,6 @@
 
 <ion-content class="ion-padding emitter-content">
 	<div class="emitter">
-		@if (showDebugPanel()) {
-		<div class="emitter__debug-panel">
-			<div class="emitter__debug-header">
-				<span>Debug Logs</span>
-				<ion-button fill="clear" size="small" (click)="showDebugPanel.set(false)">
-					<ion-icon name="close-outline" slot="icon-only"></ion-icon>
-				</ion-button>
-			</div>
-			<div class="emitter__debug-logs">
-				@for (log of debugLogs(); track $index) {
-				<div class="emitter__debug-log">{{ log }}</div>
-				}
-			</div>
-		</div>
-		}
 		@switch (phase()) {
 		@case ('idle') {
 		<p class="emitter__intro">
@@ -34,11 +19,6 @@
 			<ion-icon slot="start" name="mic-outline" aria-hidden="true"></ion-icon>
 			Démarrer le micro et générer un QR code
 		</ion-button>
-		@if (!showDebugPanel()) {
-		<ion-button expand="block" fill="outline" size="small" (click)="showDebugPanel.set(true)">
-			Afficher les logs de debug
-		</ion-button>
-		}
 		}
 
 		@case ('preparing') {
@@ -87,6 +67,9 @@
 			<h2>Connecté</h2>
 			<p>Le récepteur reçoit le son. Gardez cet appareil allumé près du bébé.</p>
 		</div>
+		<app-connection-status [peer]="peerInstance" role="emitter" [localStream]="localStream()" [isMuted]="isMuted()"
+			[reconnectStatus]="reconnectStatusSignal()">
+		</app-connection-status>
 		<app-vu-meter [stream]="localStream()"></app-vu-meter>
 		<ion-button expand="block" [color]="isMuted() ? 'medium' : 'primary'" (click)="toggleMute()">
 			<ion-icon slot="start" [name]="isMuted() ? 'mic-off-outline' : 'mic-outline'" aria-hidden="true"></ion-icon>
@@ -96,11 +79,6 @@
 			<ion-icon slot="start" name="stop-circle-outline" aria-hidden="true"></ion-icon>
 			Arrêter la diffusion
 		</ion-button>
-		@if (!showDebugPanel()) {
-		<ion-button expand="block" fill="outline" size="small" (click)="showDebugPanel.set(true)">
-			Afficher les logs de debug
-		</ion-button>
-		}
 		}
 
 		@case ('failed') {

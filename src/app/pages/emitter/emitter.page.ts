@@ -20,7 +20,7 @@ import {
 	IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle, closeOutline, micOffOutline, micOutline, qrCodeOutline, stopCircleOutline } from 'ionicons/icons';
+import { checkmarkCircle, micOffOutline, micOutline, qrCodeOutline, stopCircleOutline } from 'ionicons/icons';
 
 import { AudioKeepaliveService } from '../../core/media/audio-keepalive.service';
 import { MicService } from '../../core/media/mic.service';
@@ -33,6 +33,7 @@ import { QuickReconnectService } from '../../core/storage/quick-reconnect.servic
 import { QrDisplayComponent } from '../../shared/components/qr-display/qr-display.component';
 import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component';
 import { VuMeterComponent } from '../../shared/components/vu-meter/vu-meter.component';
+import { ConnectionStatusComponent } from '../../shared/components/connection-status/connection-status.component';
 
 type Phase =
 	| 'idle'
@@ -61,6 +62,7 @@ type Phase =
 		QrDisplayComponent,
 		QrScannerComponent,
 		VuMeterComponent,
+		ConnectionStatusComponent,
 	],
 	templateUrl: './emitter.page.html',
 	styleUrl: './emitter.page.scss',
@@ -78,29 +80,29 @@ export class EmitterPage implements OnDestroy {
 	protected readonly offerParts = signal<string[]>([]);
 	protected readonly localStream = signal<MediaStream | null>(null);
 	protected readonly isMuted = signal(false);
-	protected readonly debugLogs = signal<string[]>([]);
-	protected readonly showDebugPanel = signal(true);
 
 	protected readonly isPreparing = computed(() => this.phase() === 'preparing');
 	protected readonly isAwaitingAnswer = computed(() => this.phase() === 'awaiting-answer');
 	protected readonly isScanningAnswer = computed(() => this.phase() === 'scanning-answer');
 	protected readonly isFailed = computed(() => this.phase() === 'failed');
 	protected readonly isReconnecting = computed(() => this.reconnect.status() === 'reconnecting');
+	protected readonly reconnectStatusSignal = computed(() => {
+		const status = this.reconnect.status();
+		if (status === 'reconnecting') return 'Tentative de reconnexion...';
+		if (status === 'gave-up') return 'Échec de la reconnexion';
+		return null;
+	});
 
 	private peer: RTCPeerConnection | null = null;
 	private quickReconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 
-	private log(message: string): void {
-		console.log('[Emitter]', message);
-		const timestamp = new Date().toLocaleTimeString('fr-FR', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-		this.debugLogs.update(logs => {
-			const newLogs = [`${timestamp} ${message}`, ...logs];
-			return newLogs.slice(0, 20);
-		});
+	// Getter for template access
+	protected get peerInstance(): RTCPeerConnection | null {
+		return this.peer;
 	}
 
 	constructor() {
-		addIcons({ checkmarkCircle, closeOutline, micOffOutline, micOutline, qrCodeOutline, stopCircleOutline });
+		addIcons({ checkmarkCircle, micOffOutline, micOutline, qrCodeOutline, stopCircleOutline });
 		// Watch reconnect status: on 'gave-up', fail the session
 		effect(() => {
 			if (this.reconnect.status() === 'gave-up') {
@@ -108,6 +110,11 @@ export class EmitterPage implements OnDestroy {
 				this.phase.set('failed');
 				this.teardown();
 			}
+		});
+		// Expose peer for status widget
+		effect(() => {
+			// This effect ensures the status widget updates when peer changes
+			const _ = this.peer;
 		});
 		// Attempt quick reconnect on mount
 		void this.attemptQuickReconnect();
@@ -122,21 +129,12 @@ export class EmitterPage implements OnDestroy {
 		this.phase.set('preparing');
 		try {
 			const stream = await this.mic.acquire();
-			this.log('Mic acquired, tracks: ' + JSON.stringify(stream.getTracks().map(t => ({ kind: t.kind, id: t.id.substring(0, 8), enabled: t.enabled, muted: t.muted, readyState: t.readyState }))));
 			this.localStream.set(stream);
 			const peer = await this.peerService.create();
 			this.peer = peer;
 
 			stream.getTracks().forEach((track) => {
-				this.log('Adding track to peer: kind=' + track.kind + ' id=' + track.id + ' enabled=' + track.enabled + ' muted=' + track.muted + ' readyState=' + track.readyState);
 				peer.addTrack(track, stream);
-				// Log mute events from the track
-				track.addEventListener('mute', () => {
-					this.log('Track muted event: id=' + track.id);
-				});
-				track.addEventListener('unmute', () => {
-					this.log('Track unmuted event: id=' + track.id);
-				});
 			});
 
 			const offer = await peer.createOffer();
@@ -144,24 +142,10 @@ export class EmitterPage implements OnDestroy {
 			await this.peerService.waitForIceGathering(peer);
 
 			this.audioKeepalive.start();
-			this.log('Audio keepalive started');
-
-			// Log ICE candidates
-			peer.addEventListener('icecandidate', (event) => {
-				if (event.candidate) {
-					this.log('ICE candidate: ' + event.candidate.candidate.substring(0, 50) + '...');
-				} else {
-					this.log('ICE candidate gathering complete');
-				}
-			});
 
 			const local = peer.localDescription;
 			if (!local) throw new Error('Aucune description locale produite.');
 
-			this.log('Local SDP (offer): ' + local.sdp.substring(0, 200) + '...');
-			this.log('Local SDP tracks: ' + (local.sdp.match(/a=mid:/g) || []).length + ' media sections');
-			console.log('[EMITTER FULL SDP]', local.sdp);
-			console.log('[EMITTER ICE CANDIDATES]', local.sdp.match(/a=candidate:[^\r\n]+/g)?.length || 0, 'candidates');
 
 			const payload = await encodeSdp(local.toJSON());
 			this.offerParts.set(autoSplit(payload));
@@ -186,14 +170,9 @@ export class EmitterPage implements OnDestroy {
 
 		const newMutedState = !this.isMuted();
 		this.isMuted.set(newMutedState);
-		this.log('Toggle mute: ' + (newMutedState ? 'muting' : 'unmuting'));
-		this.log('nb audio tracks: ' + stream.getAudioTracks().length);
 		// Enable/disable audio track without stopping the stream or connection
 		stream.getAudioTracks().forEach((track) => {
-			this.log('Track before toggle: enabled=' + track.enabled + ' muted=' + track.muted);
 			track.enabled = !newMutedState;
-			this.log('Track after toggle: enabled=' + track.enabled + ' muted=' + track.muted);
-			this.log('Track state after toggle: enabled=' + track.enabled + ' muted=' + track.muted + ' readyState=' + track.readyState);
 		});
 	}
 
@@ -206,7 +185,6 @@ export class EmitterPage implements OnDestroy {
 		if (!peer) return;
 		try {
 			this.phase.set('connecting');
-			this.log('Answer scanned, setting remote description');
 			const answer = await decodeSdp(payload);
 			await peer.setRemoteDescription(new RTCSessionDescription(answer));
 			this.reconnect.attach(peer);
@@ -225,17 +203,8 @@ export class EmitterPage implements OnDestroy {
 	}
 
 	private watchForConnected(peer: RTCPeerConnection): void {
-		this.log('watchForConnected: starting to monitor connection state');
-		// Log ICE state changes too
-		peer.addEventListener('iceconnectionstatechange', () => {
-			this.log('ICE connection state: ' + peer.iceConnectionState);
-		});
-		peer.addEventListener('signalingstatechange', () => {
-			this.log('Signaling state: ' + peer.signalingState);
-		});
 		const check = (): void => {
 			const state = peer.connectionState;
-			this.log('Connection state: ' + state + ', ICE: ' + peer.iceConnectionState + ', Signaling: ' + peer.signalingState);
 			if (state === 'connected' && this.phase() !== 'connected') {
 				this.phase.set('connected');
 				void this.wakeLock.acquire();
