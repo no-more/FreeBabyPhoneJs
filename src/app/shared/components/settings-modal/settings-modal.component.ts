@@ -41,6 +41,19 @@ import { PreferencesService } from '../../../core/storage/preferences.service';
       <ion-note class="settings-note">
         Ajustez la sensibilité du VU-mètre selon votre environnement sonore.
       </ion-note>
+
+      @if (role() === 'emitter') {
+      <ion-list-header class="settings-section-header">
+        <ion-label>Micro</ion-label>
+      </ion-list-header>
+      <ion-item>
+        <ion-label>Suppression de bruit</ion-label>
+        <ion-toggle [checked]="noiseCancellation()" (ionChange)="onNoiseCancellationChange($event)"></ion-toggle>
+      </ion-item>
+      <ion-note class="settings-note">
+        Réduit le bruit de fond lors de la capture audio.
+      </ion-note>
+      }
     </ion-content>
   `,
 	styles: `
@@ -57,10 +70,16 @@ export class SettingsModalComponent {
 
 	role = input.required<Role>();
 	sensitivity = input.required<VuMeterSensitivity>();
+	noiseCancellation = input(false);
 
 	onSensitivityChange(event: CustomEvent): void {
 		const newSensitivity = event.detail.value as VuMeterSensitivity;
 		this.preferencesService.setVuMeterSensitivity(this.role(), newSensitivity);
+	}
+
+	onNoiseCancellationChange(event: CustomEvent): void {
+		const enabled = event.detail.checked;
+		this.preferencesService.setNoiseCancellation(enabled);
 	}
 
 	close(): void {
