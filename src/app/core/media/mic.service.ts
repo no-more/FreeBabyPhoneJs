@@ -5,7 +5,7 @@ import { Injectable } from '@angular/core';
  *
  * By default, all auto-processing is explicitly disabled: babyphone sensitivity to faint
  * sounds matters more than clean voice. See legacy DESCRIPTION.md §Audio.
- * Noise suppression and echo cancellation can be optionally enabled via the acquire() parameters.
+ * Noise suppression, echo cancellation, and auto gain control can be optionally enabled via the acquire() parameters.
  */
 const DEFAULT_MIC_CONSTRAINTS: MediaStreamConstraints = {
 	audio: {
@@ -20,7 +20,7 @@ const DEFAULT_MIC_CONSTRAINTS: MediaStreamConstraints = {
 export class MicService {
 	private current: MediaStream | null = null;
 
-	async acquire(noiseCancellation = false, echoCancellation = false): Promise<MediaStream> {
+	async acquire(noiseCancellation = false, echoCancellation = false, autoGainControl = false): Promise<MediaStream> {
 		if (this.current && this.current.getTracks().some((t) => t.readyState === 'live')) {
 			return this.current;
 		}
@@ -29,7 +29,7 @@ export class MicService {
 			audio: {
 				echoCancellation: echoCancellation,
 				noiseSuppression: noiseCancellation,
-				autoGainControl: false,
+				autoGainControl: autoGainControl,
 			},
 			video: false,
 		};

@@ -87,6 +87,7 @@ export class EmitterPage implements OnDestroy {
 	protected readonly vuSensitivity = signal<VuMeterSensitivity>('medium');
 	protected readonly noiseCancellation = signal(false);
 	protected readonly echoCancellation = signal(false);
+	protected readonly autoGainControl = signal(false);
 
 	protected readonly isPreparing = computed(() => this.phase() === 'preparing');
 	protected readonly isAwaitingAnswer = computed(() => this.phase() === 'awaiting-answer');
@@ -115,6 +116,8 @@ export class EmitterPage implements OnDestroy {
 		this.noiseCancellation.set(this.preferences.getNoiseCancellation());
 		// Load echo cancellation from preferences
 		this.echoCancellation.set(this.preferences.getEchoCancellation());
+		// Load auto gain control from preferences
+		this.autoGainControl.set(this.preferences.getAutoGainControl());
 		// Watch connection state: on failure, fail the session
 		effect(() => {
 			const state = this.webrtc.connectionState();
@@ -141,7 +144,7 @@ export class EmitterPage implements OnDestroy {
 		this.errorMessage.set(null);
 		this.phase.set('preparing');
 		try {
-			const stream = await this.mic.acquire(this.noiseCancellation(), this.echoCancellation());
+			const stream = await this.mic.acquire(this.noiseCancellation(), this.echoCancellation(), this.autoGainControl());
 			this.localStream.set(stream);
 
 			await this.webrtc.createPeerConnection();
@@ -197,6 +200,7 @@ export class EmitterPage implements OnDestroy {
 				sensitivity: this.vuSensitivity(),
 				noiseCancellation: this.noiseCancellation(),
 				echoCancellation: this.echoCancellation(),
+				autoGainControl: this.autoGainControl(),
 			},
 		});
 		await modal.present();
@@ -205,6 +209,7 @@ export class EmitterPage implements OnDestroy {
 		this.vuSensitivity.set(this.preferences.getVuMeterSensitivity('emitter'));
 		this.noiseCancellation.set(this.preferences.getNoiseCancellation());
 		this.echoCancellation.set(this.preferences.getEchoCancellation());
+		this.autoGainControl.set(this.preferences.getAutoGainControl());
 	}
 
 	protected async onAnswerScanned(payload: string): Promise<void> {

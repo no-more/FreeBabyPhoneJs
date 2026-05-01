@@ -54,8 +54,12 @@ import { PreferencesService } from '../../../core/storage/preferences.service';
         <ion-label>Annulation d'écho</ion-label>
         <ion-toggle [checked]="echoCancellation()" (ionChange)="onEchoCancellationChange($event)"></ion-toggle>
       </ion-item>
+      <ion-item>
+        <ion-label>Contrôle automatique du gain</ion-label>
+        <ion-toggle [checked]="autoGainControl()" (ionChange)="onAutoGainControlChange($event)"></ion-toggle>
+      </ion-item>
       <ion-note class="settings-note">
-        Réduit le bruit de fond et l'écho lors de la capture audio.
+        Ajuste automatiquement le volume pour des sons plus audibles.
       </ion-note>
       }
     </ion-content>
@@ -76,6 +80,7 @@ export class SettingsModalComponent {
 	sensitivity = input.required<VuMeterSensitivity>();
 	noiseCancellation = input(false);
 	echoCancellation = input(false);
+	autoGainControl = input(false);
 
 	onSensitivityChange(event: CustomEvent): void {
 		const newSensitivity = event.detail.value as VuMeterSensitivity;
@@ -90,6 +95,11 @@ export class SettingsModalComponent {
 	onEchoCancellationChange(event: CustomEvent): void {
 		const enabled = event.detail.checked;
 		this.preferencesService.setEchoCancellation(enabled);
+	}
+
+	onAutoGainControlChange(event: CustomEvent): void {
+		const enabled = event.detail.checked;
+		this.preferencesService.setAutoGainControl(enabled);
 	}
 
 	close(): void {
