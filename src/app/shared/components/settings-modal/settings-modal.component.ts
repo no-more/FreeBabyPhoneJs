@@ -1,4 +1,4 @@
-import { Component, inject, input } from '@angular/core';
+import { Component, computed, inject, input } from '@angular/core';
 import { IonicModule, ModalController } from '@ionic/angular';
 import type { Role, VuMeterSensitivity } from '../../../core/models';
 import { PreferencesService } from '../../../core/storage/preferences.service';
@@ -26,7 +26,7 @@ import { PreferencesService } from '../../../core/storage/preferences.service';
       <ion-list-header>
         <ion-label>VU-mètre</ion-label>
       </ion-list-header>
-      <ion-radio-group [value]="sensitivity" (ionChange)="onSensitivityChange($event)">
+      <ion-radio-group [value]="sensitivity()" (ionChange)="onSensitivityChange($event)">
         <ion-item>
           <ion-label>Faible</ion-label>
           <ion-radio value="low"></ion-radio>
@@ -45,21 +45,21 @@ import { PreferencesService } from '../../../core/storage/preferences.service';
         Ajustez la sensibilité du VU-mètre selon votre environnement sonore.
       </ion-note>
 
-      @if (role() === 'emitter') {
+      @if (isEmitter()) {
       <ion-list-header class="settings-section-header">
         <ion-label>Micro</ion-label>
       </ion-list-header>
       <ion-item>
         <ion-label>Suppression de bruit</ion-label>
-        <ion-toggle [checked]="noiseCancellation" (ionChange)="onNoiseCancellationChange($event)"></ion-toggle>
+        <ion-toggle [checked]="noiseCancellation()" (ionChange)="onNoiseCancellationChange($event)"></ion-toggle>
       </ion-item>
       <ion-item>
         <ion-label>Annulation d'écho</ion-label>
-        <ion-toggle [checked]="echoCancellation" (ionChange)="onEchoCancellationChange($event)"></ion-toggle>
+        <ion-toggle [checked]="echoCancellation()" (ionChange)="onEchoCancellationChange($event)"></ion-toggle>
       </ion-item>
       <ion-item>
         <ion-label>Contrôle automatique du gain</ion-label>
-        <ion-toggle [checked]="autoGainControl" (ionChange)="onAutoGainControlChange($event)"></ion-toggle>
+        <ion-toggle [checked]="autoGainControl()" (ionChange)="onAutoGainControlChange($event)"></ion-toggle>
       </ion-item>
       <ion-note class="settings-note">
         Ajuste automatiquement le volume pour des sons plus audibles.
@@ -70,7 +70,7 @@ import { PreferencesService } from '../../../core/storage/preferences.service';
       </ion-list-header>
       <ion-item>
         <ion-label>Garder l'écran allumé</ion-label>
-        <ion-toggle [checked]="keepScreenOn" (ionChange)="onKeepScreenOnChange($event)"></ion-toggle>
+        <ion-toggle [checked]="keepScreenOn()" (ionChange)="onKeepScreenOnChange($event)"></ion-toggle>
       </ion-item>
       <ion-note class="settings-note">
         Empêche l'écran de s'éteindre automatiquement.
@@ -95,6 +95,8 @@ export class SettingsModalComponent {
 	echoCancellation = input(false);
 	autoGainControl = input(false);
 	keepScreenOn = input(false);
+
+	protected readonly isEmitter = computed(() => this.role() === 'emitter');
 
 	onSensitivityChange(event: CustomEvent): void {
 		const newSensitivity = event.detail.value as VuMeterSensitivity;
