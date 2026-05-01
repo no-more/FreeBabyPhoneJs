@@ -8,6 +8,7 @@ const LS = {
 	VU_SENSITIVITY_EMITTER: 'babyphone.vuSensitivity.emitter',
 	VU_SENSITIVITY_RECEIVER: 'babyphone.vuSensitivity.receiver',
 	NOISE_CANCELLATION: 'babyphone.noiseCancellation',
+	ECHO_CANCELLATION: 'babyphone.echoCancellation',
 } as const;
 
 @Injectable({ providedIn: 'root' })
@@ -51,6 +52,15 @@ export class PreferencesService {
 
 	setNoiseCancellation(enabled: boolean): void {
 		this.write(LS.NOISE_CANCELLATION, String(enabled));
+	}
+
+	getEchoCancellation(): boolean {
+		const raw = this.read(LS.ECHO_CANCELLATION);
+		return raw === 'true';
+	}
+
+	setEchoCancellation(enabled: boolean): void {
+		this.write(LS.ECHO_CANCELLATION, String(enabled));
 	}
 
 	private read(key: string): string | null {

@@ -50,8 +50,12 @@ import { PreferencesService } from '../../../core/storage/preferences.service';
         <ion-label>Suppression de bruit</ion-label>
         <ion-toggle [checked]="noiseCancellation()" (ionChange)="onNoiseCancellationChange($event)"></ion-toggle>
       </ion-item>
+      <ion-item>
+        <ion-label>Annulation d'écho</ion-label>
+        <ion-toggle [checked]="echoCancellation()" (ionChange)="onEchoCancellationChange($event)"></ion-toggle>
+      </ion-item>
       <ion-note class="settings-note">
-        Réduit le bruit de fond lors de la capture audio.
+        Réduit le bruit de fond et l'écho lors de la capture audio.
       </ion-note>
       }
     </ion-content>
@@ -71,6 +75,7 @@ export class SettingsModalComponent {
 	role = input.required<Role>();
 	sensitivity = input.required<VuMeterSensitivity>();
 	noiseCancellation = input(false);
+	echoCancellation = input(false);
 
 	onSensitivityChange(event: CustomEvent): void {
 		const newSensitivity = event.detail.value as VuMeterSensitivity;
@@ -80,6 +85,11 @@ export class SettingsModalComponent {
 	onNoiseCancellationChange(event: CustomEvent): void {
 		const enabled = event.detail.checked;
 		this.preferencesService.setNoiseCancellation(enabled);
+	}
+
+	onEchoCancellationChange(event: CustomEvent): void {
+		const enabled = event.detail.checked;
+		this.preferencesService.setEchoCancellation(enabled);
 	}
 
 	close(): void {

@@ -86,6 +86,7 @@ export class EmitterPage implements OnDestroy {
 	protected readonly isMuted = signal(false);
 	protected readonly vuSensitivity = signal<VuMeterSensitivity>('medium');
 	protected readonly noiseCancellation = signal(false);
+	protected readonly echoCancellation = signal(false);
 
 	protected readonly isPreparing = computed(() => this.phase() === 'preparing');
 	protected readonly isAwaitingAnswer = computed(() => this.phase() === 'awaiting-answer');
@@ -112,6 +113,8 @@ export class EmitterPage implements OnDestroy {
 		this.vuSensitivity.set(this.preferences.getVuMeterSensitivity('emitter'));
 		// Load noise cancellation from preferences
 		this.noiseCancellation.set(this.preferences.getNoiseCancellation());
+		// Load echo cancellation from preferences
+		this.echoCancellation.set(this.preferences.getEchoCancellation());
 		// Watch connection state: on failure, fail the session
 		effect(() => {
 			const state = this.webrtc.connectionState();
@@ -138,7 +141,7 @@ export class EmitterPage implements OnDestroy {
 		this.errorMessage.set(null);
 		this.phase.set('preparing');
 		try {
-			const stream = await this.mic.acquire(this.noiseCancellation());
+			const stream = await this.mic.acquire(this.noiseCancellation(), this.echoCancellation());
 			this.localStream.set(stream);
 
 			await this.webrtc.createPeerConnection();
@@ -193,6 +196,7 @@ export class EmitterPage implements OnDestroy {
 				role: 'emitter',
 				sensitivity: this.vuSensitivity(),
 				noiseCancellation: this.noiseCancellation(),
+				echoCancellation: this.echoCancellation(),
 			},
 		});
 		await modal.present();
@@ -200,6 +204,7 @@ export class EmitterPage implements OnDestroy {
 		// Reload preferences in case they changed
 		this.vuSensitivity.set(this.preferences.getVuMeterSensitivity('emitter'));
 		this.noiseCancellation.set(this.preferences.getNoiseCancellation());
+		this.echoCancellation.set(this.preferences.getEchoCancellation());
 	}
 
 	protected async onAnswerScanned(payload: string): Promise<void> {
