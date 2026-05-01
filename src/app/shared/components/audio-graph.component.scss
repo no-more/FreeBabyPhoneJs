@@ -1,13 +1,16 @@
 .audio-graph {
 	width: 100%;
-	height: 100px;
+	min-height: 120px;
 	background-color: var(--ion-color-dark);
 	border-radius: 8px;
 	overflow: hidden;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 
 	canvas {
 		width: 100%;
-		height: 100%;
+		height: 120px;
 		display: block;
 	}
 }

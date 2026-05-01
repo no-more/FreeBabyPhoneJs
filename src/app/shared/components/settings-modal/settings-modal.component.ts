@@ -10,6 +10,9 @@ import { PreferencesService } from '../../../core/storage/preferences.service';
 	template: `
     <ion-header>
       <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-back-button (click)="close()"></ion-back-button>
+        </ion-buttons>
         <ion-title>Paramètres</ion-title>
         <ion-buttons slot="end">
           <ion-button (click)="close()">

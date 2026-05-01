@@ -1,12 +1,14 @@
 .widget-slider {
 	position: relative;
 	overflow: hidden;
+	width: 100%;
+	margin: 16px 0;
 
 	&__dots {
 		display: flex;
 		justify-content: center;
 		gap: 8px;
-		margin-bottom: 16px;
+		margin-bottom: 12px;
 	}
 
 	&__dot {
@@ -34,16 +36,22 @@
 		overflow: hidden;
 		touch-action: pan-y;
 		user-select: none;
+		width: 100%;
 	}
 
 	&__track {
 		display: flex;
 		will-change: transform;
-		height: 100%;
+		width: fit-content;
 	}
 
 	::ng-deep [widgetSlide] {
 		flex: 1;
-		min-width: 0;
+		flex-shrink: 0;
+		flex-basis: 100%;
+		width: 100%;
+		min-width: 100%;
+		box-sizing: border-box;
+		padding: 0 4px;
 	}
 }
