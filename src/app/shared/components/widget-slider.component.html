@@ -1,0 +1,18 @@
+<div class="widget-slider">
+	@if (slideCount() > 1) {
+	<div class="widget-slider__dots">
+		@for (i of slideIndices(); track i) {
+		<button class="widget-slider__dot" [class.active]="activeSlide() === i" (click)="goToSlide(i)"
+			[aria-label]="'Slide ' + (i + 1)"></button>
+		}
+	</div>
+	}
+	<div class="widget-slider__container">
+		<div class="widget-slider__track"
+			[style.transform]="'translateX(' + (-activeSlide() * 100 + translateX() / 10) + '%)'"
+			[style.transition]="isDragging() ? 'none' : 'transform 0.3s ease-out'"
+			[style.width]="(slideCount() * 100) + '%'">
+			<ng-content select="[widgetSlide]"></ng-content>
+		</div>
+	</div>
+</div>

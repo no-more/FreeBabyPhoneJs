@@ -41,6 +41,8 @@ import { QrDisplayComponent } from '../../shared/components/qr-display/qr-displa
 import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component';
 import { VuMeterComponent } from '../../shared/components/vu-meter/vu-meter.component';
 import { ConnectionStatusComponent } from '../../shared/components/connection-status/connection-status.component';
+import { WidgetSliderComponent } from '../../shared/components/widget-slider.component';
+import { SessionInfoComponent } from '../../shared/components/session-info.component';
 
 type Phase =
 	| 'idle'
@@ -70,6 +72,8 @@ type Phase =
 		QrScannerComponent,
 		VuMeterComponent,
 		ConnectionStatusComponent,
+		WidgetSliderComponent,
+		SessionInfoComponent,
 	],
 	templateUrl: './receiver.page.html',
 	styleUrl: './receiver.page.scss',
@@ -89,6 +93,7 @@ export class ReceiverPage implements OnDestroy {
 	protected readonly scanProgress = signal<{ received: number; total: number; missing: number[] } | null>(null);
 	protected readonly isMuted = signal(true); // Start muted like legacy
 	protected readonly isEmitterMuted = signal(false);
+	protected readonly connectionStartTime = signal<number | null>(null);
 
 	protected readonly isFailed = computed(() => this.phase() === 'failed');
 	protected readonly isReconnecting = computed(() => this.webrtc.connectionState() === 'connecting');
@@ -269,6 +274,7 @@ export class ReceiverPage implements OnDestroy {
 			const state = peer.connectionState;
 			if (state === 'connected' && this.phase() !== 'connected') {
 				this.phase.set('connected');
+				this.connectionStartTime.set(Date.now());
 				void this.wakeLock.acquire();
 				// Save for quick reconnect on next launch
 				const cached = this.quickReconnect.load();

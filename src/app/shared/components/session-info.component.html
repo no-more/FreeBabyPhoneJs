@@ -1,0 +1,22 @@
+<div class="session-info">
+	<div class="session-info__item">
+		<ion-icon name="time-outline" aria-hidden="true"></ion-icon>
+		<span class="session-info__label">Durée</span>
+		<span class="session-info__value">{{ sessionDuration() }}</span>
+	</div>
+	<div class="session-info__item">
+		<ion-icon name="wifi-outline" aria-hidden="true"></ion-icon>
+		<span class="session-info__label">Qualité</span>
+		<span class="session-info__value" [class.session-info__value--excellent]="connectionQuality() === 'excellent'"
+			[class.session-info__value--good]="connectionQuality() === 'good'"
+			[class.session-info__value--fair]="connectionQuality() === 'fair'"
+			[class.session-info__value--poor]="connectionQuality() === 'poor'">
+			{{ getQualityLabel(connectionQuality()) }}
+		</span>
+	</div>
+	<div class="session-info__item">
+		<ion-icon name="cellular-outline" aria-hidden="true"></ion-icon>
+		<span class="session-info__label">Perte</span>
+		<span class="session-info__value">{{ packetLoss().toFixed(1) }}%</span>
+	</div>
+</div>

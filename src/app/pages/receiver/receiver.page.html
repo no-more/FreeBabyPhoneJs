@@ -56,9 +56,18 @@
 			<h2>Connecté</h2>
 			<p>Vous écoutez le son du bébé en direct.</p>
 		</div>
-		<app-connection-status [peer]="peerInstance" role="receiver" [remoteStream]="remoteStream()"
-			[isMuted]="isMuted()" [reconnectStatus]="reconnectStatusSignal()">
-		</app-connection-status>
+		<app-widget-slider>
+			<div widgetSlide>
+				<app-connection-status [peer]="peerInstance" role="receiver" [remoteStream]="remoteStream()"
+					[isMuted]="isMuted()" [reconnectStatus]="reconnectStatusSignal()">
+				</app-connection-status>
+			</div>
+			<div widgetSlide>
+				<app-session-info [peer]="peerInstance" [remoteStream]="remoteStream()"
+					[connectionStartTime]="connectionStartTime()">
+				</app-session-info>
+			</div>
+		</app-widget-slider>
 		@if (isEmitterMuted()) {
 		<ion-note color="warning" class="receiver__status">
 			<ion-icon name="mic-off-outline" aria-hidden="true"></ion-icon>
