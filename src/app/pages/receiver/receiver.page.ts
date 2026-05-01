@@ -47,6 +47,7 @@ import { VuMeterComponent } from '../../shared/components/vu-meter/vu-meter.comp
 import { ConnectionStatusComponent } from '../../shared/components/connection-status/connection-status.component';
 import { WidgetSliderComponent } from '../../shared/components/widget-slider.component';
 import { SessionInfoComponent } from '../../shared/components/session-info.component';
+import { AudioGraphComponent } from '../../shared/components/audio-graph.component';
 import { SettingsModalComponent } from '../../shared/components/settings-modal/settings-modal.component';
 
 type Phase =
@@ -79,9 +80,11 @@ type Phase =
 		ConnectionStatusComponent,
 		WidgetSliderComponent,
 		SessionInfoComponent,
+		AudioGraphComponent,
+		SettingsModalComponent,
 	],
 	templateUrl: './receiver.page.html',
-	styleUrl: './receiver.page.scss',
+	styleUrls: ['./receiver.page.scss'],
 })
 export class ReceiverPage implements OnDestroy {
 	private readonly webrtc = inject(WebRTCService);
