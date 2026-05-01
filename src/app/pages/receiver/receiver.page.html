@@ -9,6 +9,7 @@
 
 <ion-content class="ion-padding receiver-content">
 	<div class="receiver">
+		<audio #audio autoplay playsinline></audio>
 		@switch (phase()) {
 		@case ('idle') {
 		<p class="receiver__intro">
@@ -65,7 +66,6 @@
 		</ion-note>
 		}
 		<app-vu-meter [stream]="remoteStream()"></app-vu-meter>
-		<audio #audio autoplay playsinline></audio>
 		@if (needsTapToPlay()) {
 		<ion-button expand="block" (click)="tapToPlay()">
 			<ion-icon slot="start" name="volume-high-outline" aria-hidden="true"></ion-icon>
