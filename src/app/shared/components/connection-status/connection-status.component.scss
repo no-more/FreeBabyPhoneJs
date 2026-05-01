@@ -68,7 +68,7 @@
 .status-value {
 	font-size: 13px;
 	font-weight: 500;
-	color: var(--ion-color-dark);
+	color: var(--ion-color-medium);
 
 	&[data-state='connected'] {
 		color: var(--ion-color-success);
