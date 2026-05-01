@@ -65,7 +65,7 @@
 		</ion-note>
 		}
 		<app-vu-meter [stream]="remoteStream()"></app-vu-meter>
-		<audio #audio autoplay playsinline muted></audio>
+		<audio #audio autoplay playsinline></audio>
 		@if (needsTapToPlay()) {
 		<ion-button expand="block" (click)="tapToPlay()">
 			<ion-icon slot="start" name="volume-high-outline" aria-hidden="true"></ion-icon>
