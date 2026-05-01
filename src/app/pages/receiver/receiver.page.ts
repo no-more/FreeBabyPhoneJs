@@ -35,8 +35,7 @@ import { AudioKeepaliveService } from '../../core/media/audio-keepalive.service'
 import { QrPartsAssembler, autoSplit } from '../../core/signaling/qr-parts';
 import { WakeLockService } from '../../core/media/wake-lock.service';
 import { decodeSdp, encodeSdp } from '../../core/signaling/sdp-codec';
-import { PeerConnectionService } from '../../core/webrtc/peer-connection.service';
-import { ReconnectService } from '../../core/webrtc/reconnect.service';
+import { WebRTCService } from '../../core/webrtc/webrtc.service';
 import { QuickReconnectService } from '../../core/storage/quick-reconnect.service';
 import { QrDisplayComponent } from '../../shared/components/qr-display/qr-display.component';
 import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component';
@@ -76,10 +75,9 @@ type Phase =
 	styleUrl: './receiver.page.scss',
 })
 export class ReceiverPage implements OnDestroy {
-	private readonly peerService = inject(PeerConnectionService);
+	private readonly webrtc = inject(WebRTCService);
 	private readonly wakeLock = inject(WakeLockService);
 	private readonly audioKeepalive = inject(AudioKeepaliveService);
-	private readonly reconnect = inject(ReconnectService);
 	private readonly quickReconnect = inject(QuickReconnectService);
 	private readonly toastController = inject(ToastController);
 
@@ -93,11 +91,11 @@ export class ReceiverPage implements OnDestroy {
 	protected readonly isEmitterMuted = signal(false);
 
 	protected readonly isFailed = computed(() => this.phase() === 'failed');
-	protected readonly isReconnecting = computed(() => this.reconnect.status() === 'reconnecting');
+	protected readonly isReconnecting = computed(() => this.webrtc.connectionState() === 'connecting');
 	protected readonly reconnectStatusSignal = computed(() => {
-		const status = this.reconnect.status();
-		if (status === 'reconnecting') return 'Tentative de reconnexion...';
-		if (status === 'gave-up') return 'Échec de la reconnexion';
+		const state = this.webrtc.connectionState();
+		if (state === 'connecting') return 'Tentative de reconnexion...';
+		if (state === 'failed' || state === 'disconnected') return 'Échec de la connexion';
 		return null;
 	});
 
@@ -105,19 +103,18 @@ export class ReceiverPage implements OnDestroy {
 
 	// Getter for template access
 	protected get peerInstance(): RTCPeerConnection | null {
-		return this.peer;
+		return this.webrtc.getPeerConnection();
 	}
-
-	private peer: RTCPeerConnection | null = null;
 	private quickReconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 	private readonly qrAssembler = new QrPartsAssembler();
 
 	constructor() {
 		addIcons({ checkmarkCircle, qrCodeOutline, stopCircleOutline, volumeHighOutline, volumeMuteOutline });
-		// Watch reconnect status: on 'gave-up', fail the session
+		// Watch connection state: on failure, fail the session
 		effect(() => {
-			if (this.reconnect.status() === 'gave-up') {
-				this.errorMessage.set('Connexion perdue. Relancez l\u2019appairage.');
+			const state = this.webrtc.connectionState();
+			if (state === 'failed' || state === 'closed') {
+				this.errorMessage.set('Connexion perdue. Relancez l’appairage.');
 				this.phase.set('failed');
 				this.teardown();
 			}
@@ -147,15 +144,14 @@ export class ReceiverPage implements OnDestroy {
 				this.scanProgress.set(null);
 				this.phase.set('preparing-answer');
 				const offer = await decodeSdp(result.payload);
-				const peer = await this.peerService.create();
-				this.peer = peer;
+				await this.webrtc.createPeerConnection();
+				const peer = this.webrtc.getPeerConnection();
+				if (!peer) throw new Error('Impossible de créer la connexion peer.');
 
 				peer.addEventListener('track', (event) => this.onRemoteTrack(event));
 
-				await peer.setRemoteDescription(new RTCSessionDescription(offer));
-				const answer = await peer.createAnswer();
-				await peer.setLocalDescription(new RTCSessionDescription(answer));
-				await this.peerService.waitForIceGathering(peer);
+				await this.webrtc.setRemoteDescription(offer);
+				const answer = await this.webrtc.createAnswer();
 
 				const local = peer.localDescription;
 				if (!local) throw new Error('Aucune description locale produite.');
@@ -163,7 +159,6 @@ export class ReceiverPage implements OnDestroy {
 				const encoded = await encodeSdp(local.toJSON());
 				this.answerParts.set(autoSplit(encoded));
 				this.phase.set('awaiting-emitter');
-				this.reconnect.attach(peer);
 				this.watchForConnected(peer);
 			} else {
 				// More parts needed
@@ -307,11 +302,9 @@ export class ReceiverPage implements OnDestroy {
 		const currentStream = this.remoteStream();
 		currentStream?.getTracks().forEach((t) => t.stop());
 		this.remoteStream.set(null);
-		this.peer?.close();
-		this.peer = null;
+		this.webrtc.close();
 		this.wakeLock.release();
 		this.audioKeepalive.stop();
-		this.reconnect.detach();
 		if (this.quickReconnectTimeout) {
 			clearTimeout(this.quickReconnectTimeout);
 			this.quickReconnectTimeout = null;
@@ -334,15 +327,15 @@ export class ReceiverPage implements OnDestroy {
 		}, 10000);
 
 		try {
-			const peer = await this.peerService.create();
-			this.peer = peer;
-			this.reconnect.attach(peer);
+			await this.webrtc.createPeerConnection();
+			const peer = this.webrtc.getPeerConnection();
+			if (!peer) throw new Error('Impossible de créer la connexion peer.');
 
 			peer.addEventListener('track', (event) => this.onRemoteTrack(event));
 
 			// Restore remote (emitter's offer) then local (our answer)
-			await peer.setRemoteDescription(cached.emitterSdp);
-			await peer.setLocalDescription(cached.receiverSdp);
+			await this.webrtc.setRemoteDescription(cached.emitterSdp);
+			await this.webrtc.setRemoteDescription(cached.receiverSdp);
 
 			// Watch for connection or failure
 			this.watchForConnected(peer);
