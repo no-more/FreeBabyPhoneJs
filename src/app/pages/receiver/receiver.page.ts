@@ -102,6 +102,7 @@ export class ReceiverPage implements OnDestroy {
 	protected readonly isEmitterMuted = signal(false);
 	protected readonly connectionStartTime = signal<number | null>(null);
 	protected readonly vuSensitivity = signal<VuMeterSensitivity>('medium');
+	protected readonly keepScreenOn = signal(false);
 
 	protected readonly isFailed = computed(() => this.phase() === 'failed');
 	protected readonly isReconnecting = computed(() => this.webrtc.connectionState() === 'connecting');
@@ -125,6 +126,8 @@ export class ReceiverPage implements OnDestroy {
 		addIcons({ checkmarkCircle, qrCodeOutline, settingsOutline, stopCircleOutline, volumeHighOutline, volumeMuteOutline });
 		// Load VU meter sensitivity from preferences
 		this.vuSensitivity.set(this.preferences.getVuMeterSensitivity('receiver'));
+		// Load keep screen on from preferences
+		this.keepScreenOn.set(this.preferences.getKeepScreenOn());
 		// Watch connection state: on failure, fail the session
 		effect(() => {
 			const state = this.webrtc.connectionState();
@@ -139,6 +142,15 @@ export class ReceiverPage implements OnDestroy {
 			const audio = this.audioRef?.nativeElement;
 			if (audio) {
 				audio.muted = this.isMuted();
+			}
+		});
+		// Manage wake lock based on keep screen on preference
+		effect(() => {
+			if (this.keepScreenOn()) {
+				void this.wakeLock.acquire();
+			} else if (this.phase() !== 'connected') {
+				// Only release wake lock if not in connected phase (connected phase has its own wake lock)
+				this.wakeLock.release();
 			}
 		});
 		// Attempt quick reconnect on mount
@@ -249,12 +261,14 @@ export class ReceiverPage implements OnDestroy {
 			componentProps: {
 				role: 'receiver',
 				sensitivity: this.vuSensitivity(),
+				keepScreenOn: this.keepScreenOn(),
 			},
 		});
 		await modal.present();
 		await modal.onDidDismiss();
-		// Reload sensitivity in case it changed
+		// Reload preferences in case they changed
 		this.vuSensitivity.set(this.preferences.getVuMeterSensitivity('receiver'));
+		this.keepScreenOn.set(this.preferences.getKeepScreenOn());
 	}
 
 	private onRemoteTrack(event: RTCTrackEvent): void {

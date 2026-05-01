@@ -10,6 +10,7 @@ const LS = {
 	NOISE_CANCELLATION: 'babyphone.noiseCancellation',
 	ECHO_CANCELLATION: 'babyphone.echoCancellation',
 	AUTO_GAIN_CONTROL: 'babyphone.autoGainControl',
+	KEEP_SCREEN_ON: 'babyphone.keepScreenOn',
 } as const;
 
 @Injectable({ providedIn: 'root' })
@@ -71,6 +72,15 @@ export class PreferencesService {
 
 	setAutoGainControl(enabled: boolean): void {
 		this.write(LS.AUTO_GAIN_CONTROL, String(enabled));
+	}
+
+	getKeepScreenOn(): boolean {
+		const raw = this.read(LS.KEEP_SCREEN_ON);
+		return raw === 'true';
+	}
+
+	setKeepScreenOn(enabled: boolean): void {
+		this.write(LS.KEEP_SCREEN_ON, String(enabled));
 	}
 
 	private read(key: string): string | null {

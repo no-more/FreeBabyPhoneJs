@@ -88,6 +88,7 @@ export class EmitterPage implements OnDestroy {
 	protected readonly noiseCancellation = signal(false);
 	protected readonly echoCancellation = signal(false);
 	protected readonly autoGainControl = signal(false);
+	protected readonly keepScreenOn = signal(false);
 
 	protected readonly isPreparing = computed(() => this.phase() === 'preparing');
 	protected readonly isAwaitingAnswer = computed(() => this.phase() === 'awaiting-answer');
@@ -118,6 +119,8 @@ export class EmitterPage implements OnDestroy {
 		this.echoCancellation.set(this.preferences.getEchoCancellation());
 		// Load auto gain control from preferences
 		this.autoGainControl.set(this.preferences.getAutoGainControl());
+		// Load keep screen on from preferences
+		this.keepScreenOn.set(this.preferences.getKeepScreenOn());
 		// Watch connection state: on failure, fail the session
 		effect(() => {
 			const state = this.webrtc.connectionState();
@@ -131,6 +134,15 @@ export class EmitterPage implements OnDestroy {
 		effect(() => {
 			// This effect ensures the status widget updates when peer changes
 			const _ = this.webrtc.getPeerConnection();
+		});
+		// Manage wake lock based on keep screen on preference
+		effect(() => {
+			if (this.keepScreenOn()) {
+				void this.wakeLock.acquire();
+			} else if (this.phase() !== 'connected') {
+				// Only release wake lock if not in connected phase (connected phase has its own wake lock)
+				this.wakeLock.release();
+			}
 		});
 		// Attempt quick reconnect on mount
 		void this.attemptQuickReconnect();
@@ -201,6 +213,7 @@ export class EmitterPage implements OnDestroy {
 				noiseCancellation: this.noiseCancellation(),
 				echoCancellation: this.echoCancellation(),
 				autoGainControl: this.autoGainControl(),
+				keepScreenOn: this.keepScreenOn(),
 			},
 		});
 		await modal.present();
@@ -210,6 +223,7 @@ export class EmitterPage implements OnDestroy {
 		this.noiseCancellation.set(this.preferences.getNoiseCancellation());
 		this.echoCancellation.set(this.preferences.getEchoCancellation());
 		this.autoGainControl.set(this.preferences.getAutoGainControl());
+		this.keepScreenOn.set(this.preferences.getKeepScreenOn());
 	}
 
 	protected async onAnswerScanned(payload: string): Promise<void> {

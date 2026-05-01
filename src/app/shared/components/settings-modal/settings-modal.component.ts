@@ -62,6 +62,16 @@ import { PreferencesService } from '../../../core/storage/preferences.service';
         Ajuste automatiquement le volume pour des sons plus audibles.
       </ion-note>
       }
+      <ion-list-header class="settings-section-header">
+        <ion-label>Écran</ion-label>
+      </ion-list-header>
+      <ion-item>
+        <ion-label>Garder l'écran allumé</ion-label>
+        <ion-toggle [checked]="keepScreenOn()" (ionChange)="onKeepScreenOnChange($event)"></ion-toggle>
+      </ion-item>
+      <ion-note class="settings-note">
+        Empêche l'écran de s'éteindre automatiquement.
+      </ion-note>
     </ion-content>
   `,
 	styles: `
@@ -81,6 +91,7 @@ export class SettingsModalComponent {
 	noiseCancellation = input(false);
 	echoCancellation = input(false);
 	autoGainControl = input(false);
+	keepScreenOn = input(false);
 
 	onSensitivityChange(event: CustomEvent): void {
 		const newSensitivity = event.detail.value as VuMeterSensitivity;
@@ -100,6 +111,11 @@ export class SettingsModalComponent {
 	onAutoGainControlChange(event: CustomEvent): void {
 		const enabled = event.detail.checked;
 		this.preferencesService.setAutoGainControl(enabled);
+	}
+
+	onKeepScreenOnChange(event: CustomEvent): void {
+		const enabled = event.detail.checked;
+		this.preferencesService.setKeepScreenOn(enabled);
 	}
 
 	close(): void {
