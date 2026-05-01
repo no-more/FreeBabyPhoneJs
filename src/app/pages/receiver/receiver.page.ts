@@ -327,6 +327,9 @@ export class ReceiverPage implements OnDestroy {
 		}, 10000);
 
 		try {
+			await this.wakeLock.acquire();
+			this.audioKeepalive.start();
+
 			await this.webrtc.createPeerConnection();
 			const peer = this.webrtc.getPeerConnection();
 			if (!peer) throw new Error('Impossible de créer la connexion peer.');
