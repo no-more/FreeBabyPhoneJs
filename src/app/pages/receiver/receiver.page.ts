@@ -21,11 +21,13 @@ import {
 	IonTitle,
 	IonToolbar,
 	ToastController,
+	ModalController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
 	checkmarkCircle,
 	qrCodeOutline,
+	settingsOutline,
 	stopCircleOutline,
 	volumeHighOutline,
 	volumeMuteOutline,
@@ -37,12 +39,15 @@ import { WakeLockService } from '../../core/media/wake-lock.service';
 import { decodeSdp, encodeSdp } from '../../core/signaling/sdp-codec';
 import { WebRTCService } from '../../core/webrtc/webrtc.service';
 import { QuickReconnectService } from '../../core/storage/quick-reconnect.service';
+import { PreferencesService } from '../../core/storage/preferences.service';
+import type { VuMeterSensitivity } from '../../core/models';
 import { QrDisplayComponent } from '../../shared/components/qr-display/qr-display.component';
 import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component';
 import { VuMeterComponent } from '../../shared/components/vu-meter/vu-meter.component';
 import { ConnectionStatusComponent } from '../../shared/components/connection-status/connection-status.component';
 import { WidgetSliderComponent } from '../../shared/components/widget-slider.component';
 import { SessionInfoComponent } from '../../shared/components/session-info.component';
+import { SettingsModalComponent } from '../../shared/components/settings-modal/settings-modal.component';
 
 type Phase =
 	| 'idle'
@@ -84,6 +89,8 @@ export class ReceiverPage implements OnDestroy {
 	private readonly audioKeepalive = inject(AudioKeepaliveService);
 	private readonly quickReconnect = inject(QuickReconnectService);
 	private readonly toastController = inject(ToastController);
+	private readonly preferences = inject(PreferencesService);
+	private readonly modalCtrl = inject(ModalController);
 
 	protected readonly phase = signal<Phase>('idle');
 	protected readonly errorMessage = signal<string | null>(null);
@@ -94,6 +101,7 @@ export class ReceiverPage implements OnDestroy {
 	protected readonly isMuted = signal(true); // Start muted like legacy
 	protected readonly isEmitterMuted = signal(false);
 	protected readonly connectionStartTime = signal<number | null>(null);
+	protected readonly vuSensitivity = signal<VuMeterSensitivity>('medium');
 
 	protected readonly isFailed = computed(() => this.phase() === 'failed');
 	protected readonly isReconnecting = computed(() => this.webrtc.connectionState() === 'connecting');
@@ -114,12 +122,14 @@ export class ReceiverPage implements OnDestroy {
 	private readonly qrAssembler = new QrPartsAssembler();
 
 	constructor() {
-		addIcons({ checkmarkCircle, qrCodeOutline, stopCircleOutline, volumeHighOutline, volumeMuteOutline });
+		addIcons({ checkmarkCircle, qrCodeOutline, settingsOutline, stopCircleOutline, volumeHighOutline, volumeMuteOutline });
+		// Load VU meter sensitivity from preferences
+		this.vuSensitivity.set(this.preferences.getVuMeterSensitivity('receiver'));
 		// Watch connection state: on failure, fail the session
 		effect(() => {
 			const state = this.webrtc.connectionState();
 			if (state === 'failed' || state === 'closed') {
-				this.errorMessage.set('Connexion perdue. Relancez l’appairage.');
+				this.errorMessage.set('Connexion perdue. Relancez l\u2019appairage.');
 				this.phase.set('failed');
 				this.teardown();
 			}
@@ -231,6 +241,20 @@ export class ReceiverPage implements OnDestroy {
 		const newMutedState = !this.isMuted();
 		this.isMuted.set(newMutedState);
 		audio.muted = newMutedState;
+	}
+
+	protected async openSettings(): Promise<void> {
+		const modal = await this.modalCtrl.create({
+			component: SettingsModalComponent,
+			componentProps: {
+				role: 'receiver',
+				sensitivity: this.vuSensitivity(),
+			},
+		});
+		await modal.present();
+		await modal.onDidDismiss();
+		// Reload sensitivity in case it changed
+		this.vuSensitivity.set(this.preferences.getVuMeterSensitivity('receiver'));
 	}
 
 	private onRemoteTrack(event: RTCTrackEvent): void {

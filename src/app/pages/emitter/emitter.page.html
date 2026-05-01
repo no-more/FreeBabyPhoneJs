@@ -4,6 +4,11 @@
 			<ion-back-button defaultHref="/"></ion-back-button>
 		</ion-buttons>
 		<ion-title>Émetteur</ion-title>
+		<ion-buttons slot="end">
+			<ion-button (click)="openSettings()">
+				<ion-icon name="settings-outline" slot="icon-only"></ion-icon>
+			</ion-button>
+		</ion-buttons>
 	</ion-toolbar>
 </ion-header>
 
@@ -70,7 +75,7 @@
 		<app-connection-status [peer]="peerInstance" role="emitter" [localStream]="localStream()" [isMuted]="isMuted()"
 			[reconnectStatus]="reconnectStatusSignal()">
 		</app-connection-status>
-		<app-vu-meter [stream]="localStream()"></app-vu-meter>
+		<app-vu-meter [stream]="localStream()" [sensitivity]="vuSensitivity()"></app-vu-meter>
 		<ion-button expand="block" [color]="isMuted() ? 'medium' : 'primary'" (click)="toggleMute()">
 			<ion-icon slot="start" [name]="isMuted() ? 'mic-off-outline' : 'mic-outline'" aria-hidden="true"></ion-icon>
 			{{ isMuted() ? 'Réactiver le micro' : 'Couper le micro' }}

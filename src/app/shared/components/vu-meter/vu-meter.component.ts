@@ -1,14 +1,15 @@
 import {
-  ChangeDetectionStrategy,
-  Component,
-  DestroyRef,
-  ElementRef,
-  OnInit,
-  input,
-  inject,
-  viewChild,
+	ChangeDetectionStrategy,
+	Component,
+	DestroyRef,
+	ElementRef,
+	OnInit,
+	input,
+	inject,
+	viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import type { VuMeterSensitivity } from '../../../core/models';
 
 /**
  * Visual feedback component — a bar that reacts to audio levels.
@@ -18,15 +19,15 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
  * Creates AudioContext on first stream change; closes on destroy.
  */
 @Component({
-  selector: 'app-vu-meter',
-  standalone: true,
-  changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
+	selector: 'app-vu-meter',
+	standalone: true,
+	changeDetection: ChangeDetectionStrategy.OnPush,
+	template: `
     <div class="vu-container" aria-hidden="true">
       <div class="vu-bar" #bar></div>
     </div>
   `,
-  styles: `
+	styles: `
     :host {
       display: block;
       width: 100%;
@@ -52,104 +53,121 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
   `,
 })
 export class VuMeterComponent implements OnInit {
-  /** MediaStream to analyze (local mic or remote audio). */
-  readonly stream = input<MediaStream | null>(null);
+	/** MediaStream to analyze (local mic or remote audio). */
+	readonly stream = input<MediaStream | null>(null);
 
-  private readonly barRef = viewChild.required<ElementRef<HTMLDivElement>>('bar');
-  private readonly destroyRef = inject(DestroyRef);
+	/** Sensitivity level for the VU meter. */
+	readonly sensitivity = input<VuMeterSensitivity>('medium');
 
-  private audioCtx: AudioContext | null = null;
-  private analyser: AnalyserNode | null = null;
-  private dataArray: Uint8Array | null = null;
-  private rafId: number | null = null;
+	private readonly barRef = viewChild.required<ElementRef<HTMLDivElement>>('bar');
+	private readonly destroyRef = inject(DestroyRef);
 
-  ngOnInit(): void {
-    // React to stream changes
-    // Note: In a real component we'd use a computed or effect, but for simplicity
-    // we watch the stream input via a microtask pattern in the constructor
-    setTimeout(() => this.setupStreamWatcher(), 0);
-  }
+	private audioCtx: AudioContext | null = null;
+	private analyser: AnalyserNode | null = null;
+	private dataArray: Uint8Array | null = null;
+	private rafId: number | null = null;
 
-  private setupStreamWatcher(): void {
-    let previousStream: MediaStream | null = null;
+	ngOnInit(): void {
+		// React to stream changes
+		// Note: In a real component we'd use a computed or effect, but for simplicity
+		// we watch the stream input via a microtask pattern in the constructor
+		setTimeout(() => this.setupStreamWatcher(), 0);
+	}
 
-    const checkStream = (): void => {
-      const current = this.stream();
-      if (current !== previousStream) {
-        previousStream = current;
-        if (current) {
-          void this.startAnalyzing(current);
-        } else {
-          this.stopAnalyzing();
-        }
-      }
-      this.rafId = requestAnimationFrame(checkStream);
-    };
+	private setupStreamWatcher(): void {
+		let previousStream: MediaStream | null = null;
 
-    this.rafId = requestAnimationFrame(checkStream);
+		const checkStream = (): void => {
+			const current = this.stream();
+			if (current !== previousStream) {
+				previousStream = current;
+				if (current) {
+					void this.startAnalyzing(current);
+				} else {
+					this.stopAnalyzing();
+				}
+			}
+			this.rafId = requestAnimationFrame(checkStream);
+		};
 
-    // Cleanup on destroy
-    this.destroyRef.onDestroy(() => {
-      if (this.rafId) {
-        cancelAnimationFrame(this.rafId);
-      }
-      this.stopAnalyzing();
-    });
-  }
+		this.rafId = requestAnimationFrame(checkStream);
 
-  private async startAnalyzing(stream: MediaStream): Promise<void> {
-    // Close any existing context
-    this.stopAnalyzing();
+		// Cleanup on destroy
+		this.destroyRef.onDestroy(() => {
+			if (this.rafId) {
+				cancelAnimationFrame(this.rafId);
+			}
+			this.stopAnalyzing();
+		});
+	}
 
-    try {
-      this.audioCtx = new AudioContext();
-      const source = this.audioCtx.createMediaStreamSource(stream);
-      this.analyser = this.audioCtx.createAnalyser();
-      this.analyser.fftSize = 256;
-      source.connect(this.analyser);
+	private async startAnalyzing(stream: MediaStream): Promise<void> {
+		// Close any existing context
+		this.stopAnalyzing();
 
-      const bufferLength = this.analyser.frequencyBinCount;
-      this.dataArray = new Uint8Array(bufferLength);
+		try {
+			this.audioCtx = new AudioContext();
+			const source = this.audioCtx.createMediaStreamSource(stream);
+			this.analyser = this.audioCtx.createAnalyser();
+			this.analyser.fftSize = 256;
+			source.connect(this.analyser);
 
-      this.tick();
-    } catch (e) {
-      console.error('VU meter failed to start:', e);
-    }
-  }
+			const bufferLength = this.analyser.frequencyBinCount;
+			this.dataArray = new Uint8Array(bufferLength);
 
-  private stopAnalyzing(): void {
-    if (this.rafId) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
-    }
-    if (this.audioCtx) {
-      void this.audioCtx.close();
-      this.audioCtx = null;
-    }
-    this.analyser = null;
-    this.dataArray = null;
-  }
+			this.tick();
+		} catch (e) {
+			console.error('VU meter failed to start:', e);
+		}
+	}
 
-  private tick(): void {
-    if (!this.analyser || !this.dataArray) return;
+	private stopAnalyzing(): void {
+		if (this.rafId) {
+			cancelAnimationFrame(this.rafId);
+			this.rafId = null;
+		}
+		if (this.audioCtx) {
+			void this.audioCtx.close();
+			this.audioCtx = null;
+		}
+		this.analyser = null;
+		this.dataArray = null;
+	}
 
-    // @ts-expect-error Type mismatch between Uint8Array generics in DOM types
-    this.analyser.getByteFrequencyData(this.dataArray);
-    let sum = 0;
-    for (let i = 0; i < this.dataArray.length; i++) {
-      sum += this.dataArray[i];
-    }
-    const average = sum / this.dataArray.length;
+	private getSensitivityConfig(): { multiplier: number; warningThreshold: number } {
+		switch (this.sensitivity()) {
+			case 'low':
+				return { multiplier: 0.6, warningThreshold: 80 };
+			case 'high':
+				return { multiplier: 2.0, warningThreshold: 40 };
+			case 'medium':
+			default:
+				return { multiplier: 1.2, warningThreshold: 60 };
+		}
+	}
 
-    // Scale to percentage (0-100), with some amplification for visibility
-    const percentage = Math.min(100, average * 2.5);
+	private tick(): void {
+		if (!this.analyser || !this.dataArray) return;
 
-    const bar = this.barRef().nativeElement;
-    bar.style.width = `${percentage}%`;
+		// @ts-expect-error Type mismatch between Uint8Array generics in DOM types
+		this.analyser.getByteFrequencyData(this.dataArray);
+		let sum = 0;
+		for (let i = 0; i < this.dataArray.length; i++) {
+			sum += this.dataArray[i];
+		}
+		const average = sum / this.dataArray.length;
 
-    // Toggle warning class when level is high
-    bar.classList.toggle('warning', average > 30);
+		const { multiplier, warningThreshold } = this.getSensitivityConfig();
 
-    this.rafId = requestAnimationFrame(() => this.tick());
-  }
+		// Scale to percentage (0-100), with amplification based on sensitivity
+		const percentage = Math.min(100, average * multiplier);
+
+		const bar = this.barRef().nativeElement;
+		bar.style.width = `${percentage}%`;
+
+		// Toggle warning class when level is high
+		bar.classList.toggle('warning', average > warningThreshold);
+
+		this.rafId = requestAnimationFrame(() => this.tick());
+	}
 }

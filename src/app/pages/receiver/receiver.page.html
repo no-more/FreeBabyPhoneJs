@@ -4,6 +4,11 @@
 			<ion-back-button defaultHref="/"></ion-back-button>
 		</ion-buttons>
 		<ion-title>Récepteur</ion-title>
+		<ion-buttons slot="end">
+			<ion-button (click)="openSettings()">
+				<ion-icon name="settings-outline" slot="icon-only"></ion-icon>
+			</ion-button>
+		</ion-buttons>
 	</ion-toolbar>
 </ion-header>
 
@@ -74,7 +79,7 @@
 			Le micro de l'émetteur est coupé
 		</ion-note>
 		}
-		<app-vu-meter [stream]="remoteStream()"></app-vu-meter>
+		<app-vu-meter [stream]="remoteStream()" [sensitivity]="vuSensitivity()"></app-vu-meter>
 		@if (needsTapToPlay()) {
 		<ion-button expand="block" (click)="tapToPlay()">
 			<ion-icon slot="start" name="volume-high-outline" aria-hidden="true"></ion-icon>
