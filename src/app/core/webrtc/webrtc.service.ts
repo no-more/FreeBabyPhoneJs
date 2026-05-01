@@ -12,10 +12,10 @@ import { Injectable, signal } from '@angular/core';
 export class WebRTCService {
 	/** Current peer connection instance */
 	private peer: RTCPeerConnection | null = null;
-	
+
 	/** Connection state signal for UI consumption */
 	readonly connectionState = signal<RTCPeerConnectionState>('new');
-	
+
 	/** ICE gathering state signal for UI consumption */
 	readonly iceGatheringState = signal<RTCIceGatheringState>('new');
 
@@ -29,7 +29,7 @@ export class WebRTCService {
 
 	/** Certificate persistence */
 	private cert: RTCCertificate | null = null;
-	private readonly dbName = 'babyphone-webrtc';
+	private readonly dbName = 'babyphone-pairing';
 	private readonly storeName = 'certs';
 	private readonly certKey = 'main';
 	private readonly certValidityMs = 365 * 24 * 60 * 60 * 1000; // one year
@@ -40,7 +40,7 @@ export class WebRTCService {
 	 */
 	async createPeerConnection(): Promise<RTCPeerConnection> {
 		await this.loadOrCreateCertificate();
-		
+
 		const config: RTCConfiguration = {
 			...this.rtcConfig,
 			...(this.cert ? { certificates: [this.cert] } : {}),
@@ -48,7 +48,7 @@ export class WebRTCService {
 
 		this.peer = new RTCPeerConnection(config);
 		this.attachEventListeners(this.peer);
-		
+
 		return this.peer;
 	}
 
@@ -84,7 +84,7 @@ export class WebRTCService {
 
 		const local = pc.localDescription;
 		if (!local) throw new Error('No local description');
-		
+
 		return local.toJSON();
 	}
 
@@ -101,7 +101,7 @@ export class WebRTCService {
 
 		const local = pc.localDescription;
 		if (!local) throw new Error('No local description');
-		
+
 		return local.toJSON();
 	}
 
@@ -173,7 +173,7 @@ export class WebRTCService {
 
 		try {
 			let cert = await this.loadCertificate();
-			
+
 			if (cert && cert.expires && cert.expires < Date.now() + this.renewBeforeMs) {
 				cert = null;
 			}

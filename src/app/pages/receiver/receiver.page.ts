@@ -335,7 +335,10 @@ export class ReceiverPage implements OnDestroy {
 
 			// Restore remote (emitter's offer) then local (our answer)
 			await this.webrtc.setRemoteDescription(cached.emitterSdp);
-			await this.webrtc.setRemoteDescription(cached.receiverSdp);
+			const peerInternal = this.webrtc.getPeerConnection();
+			if (peerInternal) {
+				await peerInternal.setLocalDescription(new RTCSessionDescription(cached.receiverSdp));
+			}
 
 			// Watch for connection or failure
 			this.watchForConnected(peer);
