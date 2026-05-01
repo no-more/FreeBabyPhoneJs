@@ -119,6 +119,13 @@ export class ReceiverPage implements OnDestroy {
 				this.teardown();
 			}
 		});
+		// Sync audio element muted state with signal
+		effect(() => {
+			const audio = this.audioRef?.nativeElement;
+			if (audio) {
+				audio.muted = this.isMuted();
+			}
+		});
 		// Attempt quick reconnect on mount
 		void this.attemptQuickReconnect();
 	}
@@ -249,11 +256,6 @@ export class ReceiverPage implements OnDestroy {
 		}
 		audio.srcObject = stream;
 
-		// Try to unmute the audio track on receiver side
-		stream.getAudioTracks().forEach(track => {
-			track.enabled = true;
-		});
-
 		audio.play().then(() => {
 			// Playback started
 		}).catch((err) => {
@@ -281,8 +283,6 @@ export class ReceiverPage implements OnDestroy {
 						});
 					}
 				}
-				// Re-attach the stream now that the audio element is in the DOM.
-				queueMicrotask(() => this.attachStreamToAudio());
 			} else if (state === 'failed' || state === 'closed') {
 				peer.removeEventListener('connectionstatechange', check);
 				this.errorMessage.set('\u00c9chec de la connexion. Relancez l\u2019appairage.');
