@@ -266,6 +266,8 @@ export class ReceiverPage implements OnDestroy {
 				sensitivity: this.vuSensitivity(),
 				keepScreenOn: this.keepScreenOn(),
 			},
+			backdropDismiss: true,
+			showBackdrop: true,
 		});
 		await modal.present();
 		await modal.onDidDismiss();

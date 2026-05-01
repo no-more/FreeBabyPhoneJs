@@ -215,6 +215,8 @@ export class EmitterPage implements OnDestroy {
 				autoGainControl: this.autoGainControl(),
 				keepScreenOn: this.keepScreenOn(),
 			},
+			backdropDismiss: true,
+			showBackdrop: true,
 		});
 		await modal.present();
 		await modal.onDidDismiss();

@@ -10,9 +10,6 @@ import { PreferencesService } from '../../../core/storage/preferences.service';
 	template: `
     <ion-header>
       <ion-toolbar>
-        <ion-buttons slot="start">
-          <ion-back-button (click)="close()"></ion-back-button>
-        </ion-buttons>
         <ion-title>Paramètres</ion-title>
         <ion-buttons slot="end">
           <ion-button (click)="close()">
@@ -75,6 +72,12 @@ import { PreferencesService } from '../../../core/storage/preferences.service';
       <ion-note class="settings-note">
         Empêche l'écran de s'éteindre automatiquement.
       </ion-note>
+
+      <div class="settings-footer">
+        <ion-button expand="block" (click)="close()">
+          Fermer
+        </ion-button>
+      </div>
     </ion-content>
   `,
 	styles: `
@@ -82,6 +85,11 @@ import { PreferencesService } from '../../../core/storage/preferences.service';
       display: block;
       margin-top: 16px;
       color: var(--ion-color-medium);
+    }
+    .settings-footer {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid var(--ion-color-light);
     }
   `,
 })
