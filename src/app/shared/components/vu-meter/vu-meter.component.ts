@@ -3,12 +3,11 @@ import {
 	Component,
 	DestroyRef,
 	ElementRef,
-	OnInit,
+	effect,
 	input,
 	inject,
 	viewChild,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import type { VuMeterSensitivity } from '../../../core/models';
 
 /**
@@ -52,7 +51,7 @@ import type { VuMeterSensitivity } from '../../../core/models';
     }
   `,
 })
-export class VuMeterComponent implements OnInit {
+export class VuMeterComponent {
 	/** MediaStream to analyze (local mic or remote audio). */
 	readonly stream = input<MediaStream | null>(null);
 
@@ -66,47 +65,58 @@ export class VuMeterComponent implements OnInit {
 	private analyser: AnalyserNode | null = null;
 	private dataArray: Uint8Array | null = null;
 	private rafId: number | null = null;
+	private isTicking = false;
 
-	ngOnInit(): void {
-		// React to stream changes
-		// Note: In a real component we'd use a computed or effect, but for simplicity
-		// we watch the stream input via a microtask pattern in the constructor
-		setTimeout(() => this.setupStreamWatcher(), 0);
-	}
-
-	private setupStreamWatcher(): void {
-		let previousStream: MediaStream | null = null;
-
-		const checkStream = (): void => {
+	constructor() {
+		// Watch stream changes
+		effect(() => {
 			const current = this.stream();
-			if (current !== previousStream) {
-				previousStream = current;
-				if (current) {
-					void this.startAnalyzing(current);
-				} else {
-					this.stopAnalyzing();
-				}
+			if (current) {
+				void this.startAnalyzing(current);
+			} else {
+				this.stopAnalyzing();
 			}
-			this.rafId = requestAnimationFrame(checkStream);
-		};
+		});
 
-		this.rafId = requestAnimationFrame(checkStream);
+		// Pause/resume with page visibility to save battery on emitter
+		document.addEventListener('visibilitychange', this.onVisibilityChange);
 
-		// Cleanup on destroy
 		this.destroyRef.onDestroy(() => {
-			if (this.rafId) {
-				cancelAnimationFrame(this.rafId);
-			}
+			document.removeEventListener('visibilitychange', this.onVisibilityChange);
 			this.stopAnalyzing();
 		});
 	}
 
+	private readonly onVisibilityChange = (): void => {
+		if (document.hidden) {
+			// Pause the render loop; suspend AudioContext to free CPU
+			if (this.rafId) {
+				cancelAnimationFrame(this.rafId);
+				this.rafId = null;
+			}
+			this.isTicking = false;
+			if (this.audioCtx?.state === 'running') {
+				void this.audioCtx.suspend();
+			}
+		} else if (this.analyser && !this.isTicking) {
+			// Resume AudioContext and restart tick loop
+			if (this.audioCtx?.state === 'suspended') {
+				void this.audioCtx.resume().then(() => this.tick());
+			} else {
+				this.tick();
+			}
+		}
+	};
+
 	private async startAnalyzing(stream: MediaStream): Promise<void> {
-		// Close any existing context
 		this.stopAnalyzing();
 
 		try {
 			this.audioCtx = new AudioContext();
+			// Browsers (especially mobile) start AudioContext suspended.
+			if (this.audioCtx.state === 'suspended') {
+				await this.audioCtx.resume();
+			}
 			const source = this.audioCtx.createMediaStreamSource(stream);
 			this.analyser = this.audioCtx.createAnalyser();
 			this.analyser.fftSize = 256;
@@ -115,13 +125,16 @@ export class VuMeterComponent implements OnInit {
 			const bufferLength = this.analyser.frequencyBinCount;
 			this.dataArray = new Uint8Array(bufferLength);
 
-			this.tick();
+			if (!document.hidden) {
+				this.tick();
+			}
 		} catch (e) {
 			console.error('VU meter failed to start:', e);
 		}
 	}
 
 	private stopAnalyzing(): void {
+		this.isTicking = false;
 		if (this.rafId) {
 			cancelAnimationFrame(this.rafId);
 			this.rafId = null;
@@ -148,6 +161,7 @@ export class VuMeterComponent implements OnInit {
 
 	private tick(): void {
 		if (!this.analyser || !this.dataArray) return;
+		this.isTicking = true;
 
 		// @ts-expect-error Type mismatch between Uint8Array generics in DOM types
 		this.analyser.getByteFrequencyData(this.dataArray);
@@ -168,6 +182,11 @@ export class VuMeterComponent implements OnInit {
 		// Toggle warning class when level is high
 		bar.classList.toggle('warning', average > warningThreshold);
 
-		this.rafId = requestAnimationFrame(() => this.tick());
+		if (!document.hidden) {
+			this.rafId = requestAnimationFrame(() => this.tick());
+		} else {
+			this.isTicking = false;
+			this.rafId = null;
+		}
 	}
 }

@@ -47,7 +47,6 @@ import { VuMeterComponent } from '../../shared/components/vu-meter/vu-meter.comp
 import { ConnectionStatusComponent } from '../../shared/components/connection-status/connection-status.component';
 import { WidgetSliderComponent } from '../../shared/components/widget-slider.component';
 import { SessionInfoComponent } from '../../shared/components/session-info.component';
-import { AudioGraphComponent } from '../../shared/components/audio-graph.component';
 
 type Phase =
 	| 'idle'
@@ -79,7 +78,6 @@ type Phase =
 		ConnectionStatusComponent,
 		WidgetSliderComponent,
 		SessionInfoComponent,
-		AudioGraphComponent,
 	],
 	templateUrl: './receiver.page.html',
 	styleUrls: ['./receiver.page.scss'],

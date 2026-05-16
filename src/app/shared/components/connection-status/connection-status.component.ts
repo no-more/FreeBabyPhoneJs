@@ -112,6 +112,9 @@ export class ConnectionStatusComponent {
 	}
 
 	private async updateStats(peer: RTCPeerConnection): Promise<void> {
+		// Skip when backgrounded — saves battery on emitter where nobody is looking.
+		if (typeof document !== 'undefined' && document.hidden) return;
+
 		try {
 			const stats = await peer.getStats();
 			let bytesReceived = 0;
