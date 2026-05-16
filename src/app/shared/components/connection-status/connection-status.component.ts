@@ -10,6 +10,8 @@ import {
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval } from 'rxjs';
 import { IonIcon } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { batteryChargingOutline, batteryDeadOutline, batteryFullOutline, batteryHalfOutline } from 'ionicons/icons';
 
 type ConnectionQuality = 'excellent' | 'good' | 'fair' | 'poor' | 'unknown';
 
@@ -44,6 +46,7 @@ export class ConnectionStatusComponent {
 	remoteStream = input<MediaStream | null>(null);
 	isMuted = input<boolean>(false);
 	reconnectStatus = input<string | null>(null);
+	batteryLevel = input<{ level: number; charging: boolean } | null>(null);
 
 	protected readonly status = signal<StatusState>({
 		connectionState: 'new',
@@ -62,6 +65,7 @@ export class ConnectionStatusComponent {
 	private statsHistory: { timestamp: number; bytesReceived: number; bytesSent: number }[] = [];
 
 	constructor() {
+		addIcons({ batteryChargingOutline, batteryDeadOutline, batteryFullOutline, batteryHalfOutline });
 		// Update stats every 2 seconds
 		effect(() => {
 			const peer = this.peer();
@@ -238,6 +242,27 @@ export class ConnectionStatusComponent {
 		const mins = Math.floor(seconds / 60);
 		const secs = seconds % 60;
 		return `${mins}:${secs.toString().padStart(2, '0')}`;
+	}
+
+	protected getBatteryIcon(battery: { level: number; charging: boolean } | null): string {
+		if (!battery) return 'battery-dead-outline';
+		if (battery.charging) return 'battery-charging-outline';
+		if (battery.level > 0.5) return 'battery-full-outline';
+		if (battery.level > 0.2) return 'battery-half-outline';
+		return 'battery-dead-outline';
+	}
+
+	protected getBatteryColor(battery: { level: number; charging: boolean } | null): string {
+		if (!battery) return 'medium';
+		if (battery.charging) return 'success';
+		if (battery.level <= 0.2) return 'danger';
+		if (battery.level <= 0.5) return 'warning';
+		return 'success';
+	}
+
+	protected formatBatteryPercent(battery: { level: number; charging: boolean } | null): string {
+		if (!battery) return '--';
+		return `${Math.round(battery.level * 100)} %`;
 	}
 }
 

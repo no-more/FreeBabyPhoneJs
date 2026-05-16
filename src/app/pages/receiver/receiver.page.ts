@@ -102,6 +102,7 @@ export class ReceiverPage implements OnDestroy {
 	protected readonly isMuted = signal(true); // Start muted like legacy
 	protected readonly isEmitterMuted = signal(false);
 	protected readonly connectionStartTime = signal<number | null>(null);
+	protected readonly emitterBattery = signal<{ level: number; charging: boolean } | null>(null);
 	protected readonly vuSensitivity = signal<VuMeterSensitivity>('medium');
 	protected readonly keepScreenOn = signal(false);
 
@@ -152,6 +153,13 @@ export class ReceiverPage implements OnDestroy {
 			} else if (this.phase() !== 'connected') {
 				// Only release wake lock if not in connected phase (connected phase has its own wake lock)
 				this.wakeLock.release();
+			}
+		});
+		// Listen for battery updates from emitter via data channel
+		effect(() => {
+			const msg = this.webrtc.lastDataChannelMessage();
+			if (msg?.type === 'battery' && msg.payload) {
+				this.emitterBattery.set(msg.payload as { level: number; charging: boolean });
 			}
 		});
 		// Attempt quick reconnect on mount
@@ -338,6 +346,7 @@ export class ReceiverPage implements OnDestroy {
 		this.webrtc.close();
 		this.wakeLock.release();
 		this.audioKeepalive.stop();
+		this.emitterBattery.set(null);
 		if (this.quickReconnectTimeout) {
 			clearTimeout(this.quickReconnectTimeout);
 			this.quickReconnectTimeout = null;

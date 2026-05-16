@@ -69,6 +69,18 @@
 		</div>
 		}
 
+		<!-- Emitter Battery -->
+		@if (role() === 'receiver') {
+		<div class="status-item">
+			<span class="status-label">Batterie émetteur</span>
+			<span class="status-value">
+				<ion-icon [name]="getBatteryIcon(batteryLevel())" [color]="getBatteryColor(batteryLevel())"
+					aria-hidden="true"></ion-icon>
+				{{ formatBatteryPercent(batteryLevel()) }}
+			</span>
+		</div>
+		}
+
 		<!-- Reconnect Status -->
 		@if (reconnectStatus()) {
 		<div class="status-item status-item--warning">

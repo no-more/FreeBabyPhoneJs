@@ -102,6 +102,7 @@ export class EmitterPage implements OnDestroy {
 	});
 
 	private quickReconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+	private batteryInterval: ReturnType<typeof setInterval> | null = null;
 
 	// Getter for template access
 	protected get peerInstance(): RTCPeerConnection | null {
@@ -161,6 +162,8 @@ export class EmitterPage implements OnDestroy {
 			await this.webrtc.createPeerConnection();
 			const peer = this.webrtc.getPeerConnection();
 			if (!peer) throw new Error('Impossible de créer la connexion peer.');
+
+			this.webrtc.createDataChannel('status');
 
 			stream.getTracks().forEach((track) => {
 				this.webrtc.addTrack(track, stream);
@@ -234,6 +237,7 @@ export class EmitterPage implements OnDestroy {
 			if (state === 'connected' && this.phase() !== 'connected') {
 				this.phase.set('connected');
 				void this.wakeLock.acquire();
+				this.startBatteryReporting();
 				// Save for quick reconnect on next launch
 				const cached = this.quickReconnect.load();
 				if (!cached) {
@@ -269,6 +273,32 @@ export class EmitterPage implements OnDestroy {
 		if (this.quickReconnectTimeout) {
 			clearTimeout(this.quickReconnectTimeout);
 			this.quickReconnectTimeout = null;
+		}
+		if (this.batteryInterval) {
+			clearInterval(this.batteryInterval);
+			this.batteryInterval = null;
+		}
+	}
+
+	private startBatteryReporting(): void {
+		if (this.batteryInterval) return;
+		void this.sendBatteryUpdate();
+		this.batteryInterval = setInterval(() => {
+			void this.sendBatteryUpdate();
+		}, 30000);
+	}
+
+	private async sendBatteryUpdate(): Promise<void> {
+		if (!('getBattery' in navigator)) return;
+		try {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const battery = await (navigator as any).getBattery();
+			this.webrtc.sendDataChannelMessage({
+				type: 'battery',
+				payload: { level: battery.level, charging: battery.charging },
+			});
+		} catch {
+			// Battery API unavailable or denied
 		}
 	}
 

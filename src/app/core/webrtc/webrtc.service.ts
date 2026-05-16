@@ -1,9 +1,15 @@
 import { Injectable, signal } from '@angular/core';
 
+export interface DataChannelMessage {
+	type: string;
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	payload?: any;
+}
+
 /**
  * Simple WebRTC service that combines peer connection creation,
  * certificate management, and ICE gathering into a single easy-to-use interface.
- * 
+ *
  * This service extracts the essential WebRTC functionality that was working
  * on the deploy-test-1 branch, providing a simplified API for establishing
  * peer-to-peer audio connections.
@@ -13,11 +19,17 @@ export class WebRTCService {
 	/** Current peer connection instance */
 	private peer: RTCPeerConnection | null = null;
 
+	/** Active data channel */
+	private dc: RTCDataChannel | null = null;
+
 	/** Connection state signal for UI consumption */
 	readonly connectionState = signal<RTCPeerConnectionState>('new');
 
 	/** ICE gathering state signal for UI consumption */
 	readonly iceGatheringState = signal<RTCIceGatheringState>('new');
+
+	/** Latest message received on the data channel */
+	readonly lastDataChannelMessage = signal<DataChannelMessage | null>(null);
 
 	/** STUN-only ICE config. No TURN by design: local-network pairing only. */
 	private readonly rtcConfig: RTCConfiguration = {
@@ -63,12 +75,49 @@ export class WebRTCService {
 	 * Close and cleanup the current peer connection
 	 */
 	close(): void {
+		if (this.dc) {
+			this.dc.close();
+			this.dc = null;
+		}
 		if (this.peer) {
 			this.peer.close();
 			this.peer = null;
 			this.connectionState.set('new');
 			this.iceGatheringState.set('new');
+			this.lastDataChannelMessage.set(null);
 		}
+	}
+
+	/**
+	 * Create a data channel on the peer connection (call from emitter side)
+	 */
+	createDataChannel(label: string): RTCDataChannel | null {
+		const pc = this.peer;
+		if (!pc) return null;
+		this.dc = pc.createDataChannel(label);
+		this.attachDataChannelListeners(this.dc);
+		return this.dc;
+	}
+
+	/**
+	 * Send a message through the active data channel.
+	 * Returns true if sent, false if channel not open.
+	 */
+	sendDataChannelMessage(msg: DataChannelMessage): boolean {
+		if (!this.dc || this.dc.readyState !== 'open') return false;
+		try {
+			this.dc.send(JSON.stringify(msg));
+			return true;
+		} catch {
+			return false;
+		}
+	}
+
+	/**
+	 * Get the current data channel instance
+	 */
+	getDataChannel(): RTCDataChannel | null {
+		return this.dc;
 	}
 
 	/**
@@ -162,6 +211,25 @@ export class WebRTCService {
 
 		pc.addEventListener('icegatheringstatechange', () => {
 			this.iceGatheringState.set(pc.iceGatheringState);
+		});
+
+		pc.addEventListener('datachannel', (event) => {
+			this.dc = event.channel;
+			this.attachDataChannelListeners(this.dc);
+		});
+	}
+
+	/**
+	 * Attach message/open/close listeners to a data channel
+	 */
+	private attachDataChannelListeners(dc: RTCDataChannel): void {
+		dc.addEventListener('message', (event) => {
+			try {
+				const msg = JSON.parse(event.data) as DataChannelMessage;
+				this.lastDataChannelMessage.set(msg);
+			} catch {
+				// Ignore non-JSON messages
+			}
 		});
 	}
 
