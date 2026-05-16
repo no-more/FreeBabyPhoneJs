@@ -291,7 +291,6 @@ export class EmitterPage implements OnDestroy {
 	private async sendBatteryUpdate(): Promise<void> {
 		if (!('getBattery' in navigator)) return;
 		try {
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			const battery = await (navigator as any).getBattery();
 			this.webrtc.sendDataChannelMessage({
 				type: 'battery',

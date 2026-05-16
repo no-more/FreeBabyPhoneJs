@@ -2,7 +2,6 @@ import { Injectable, signal } from '@angular/core';
 
 export interface DataChannelMessage {
 	type: string;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	payload?: any;
 }
 
