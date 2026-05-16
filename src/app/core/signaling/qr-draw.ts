@@ -14,7 +14,7 @@ import qrcode from 'qrcode-generator';
 const QUIET_ZONE_MODULES = 4;
 
 export function drawQrToCanvas(canvas: HTMLCanvasElement, text: string, targetSize: number): void {
-	const qr = qrcode(0, 'M');
+	const qr = qrcode(0, 'Q');
 	qr.addData(text);
 	qr.make();
 
