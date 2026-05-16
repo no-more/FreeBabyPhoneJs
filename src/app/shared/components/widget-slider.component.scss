@@ -45,7 +45,7 @@
 	}
 
 	::ng-deep [widgetSlide] {
-		flex: 0 0 calc(100% / var(--slide-count, 1));
+		flex: 0 0 100%;
 		box-sizing: border-box;
 		padding: 0 4px;
 	}
