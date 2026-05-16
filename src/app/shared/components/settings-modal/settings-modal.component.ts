@@ -1,5 +1,7 @@
 import { Component, Input, computed, inject } from '@angular/core';
 import { IonicModule, ModalController } from '@ionic/angular';
+import { addIcons } from 'ionicons';
+import { closeOutline } from 'ionicons/icons';
 import type { Role, VuMeterSensitivity } from '../../../core/models';
 import { PreferencesService } from '../../../core/storage/preferences.service';
 
@@ -96,6 +98,10 @@ import { PreferencesService } from '../../../core/storage/preferences.service';
 export class SettingsModalComponent {
 	private readonly modalCtrl = inject(ModalController);
 	private readonly preferencesService = inject(PreferencesService);
+
+	constructor() {
+		addIcons({ closeOutline });
+	}
 
 	@Input({ required: true }) role!: Role;
 	@Input({ required: true }) sensitivity!: VuMeterSensitivity;
