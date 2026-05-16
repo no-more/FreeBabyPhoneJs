@@ -11,7 +11,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval } from 'rxjs';
 import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { batteryChargingOutline, batteryDeadOutline, batteryFullOutline, batteryHalfOutline } from 'ionicons/icons';
+import { batteryChargingOutline, batteryDeadOutline, batteryFullOutline, batteryHalfOutline, pulseOutline } from 'ionicons/icons';
 
 type ConnectionQuality = 'excellent' | 'good' | 'fair' | 'poor' | 'unknown';
 
@@ -65,7 +65,7 @@ export class ConnectionStatusComponent {
 	private statsHistory: { timestamp: number; bytesReceived: number; bytesSent: number }[] = [];
 
 	constructor() {
-		addIcons({ batteryChargingOutline, batteryDeadOutline, batteryFullOutline, batteryHalfOutline });
+		addIcons({ batteryChargingOutline, batteryDeadOutline, batteryFullOutline, batteryHalfOutline, pulseOutline });
 		// Update stats every 2 seconds
 		effect(() => {
 			const peer = this.peer();
