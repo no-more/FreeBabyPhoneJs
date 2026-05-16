@@ -46,6 +46,24 @@ export class MicService {
 		});
 	}
 
+	/**
+	 * Apply new audio constraints to the currently live track.
+	 * No-op if no track is active.
+	 */
+	async applyConstraints(
+		noiseCancellation = false,
+		echoCancellation = false,
+		autoGainControl = false,
+	): Promise<void> {
+		const track = this.current?.getAudioTracks()[0];
+		if (!track) return;
+		await track.applyConstraints({
+			echoCancellation,
+			noiseSuppression: noiseCancellation,
+			autoGainControl,
+		});
+	}
+
 	release(): void {
 		this.current?.getTracks().forEach((t) => t.stop());
 		this.current = null;

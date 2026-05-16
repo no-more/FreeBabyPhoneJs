@@ -15,6 +15,7 @@ import {
 	IonToolbar,
 } from '@ionic/angular/standalone';
 import { PreferencesService } from '../../core/storage/preferences.service';
+import { WebRTCService } from '../../core/webrtc/webrtc.service';
 import type { VuMeterSensitivity } from '../../core/models';
 
 @Component({
@@ -69,6 +70,25 @@ import type { VuMeterSensitivity } from '../../core/models';
 			</ion-note>
 
 			<ion-list-header class="settings-section-header">
+				<ion-label>Micro de l'émetteur</ion-label>
+			</ion-list-header>
+			<ion-item>
+				<ion-label>Suppression de bruit</ion-label>
+				<ion-toggle [checked]="noiseCancellation" (ionChange)="onNoiseCancellationChange($event)"></ion-toggle>
+			</ion-item>
+			<ion-item>
+				<ion-label>Annulation d'écho</ion-label>
+				<ion-toggle [checked]="echoCancellation" (ionChange)="onEchoCancellationChange($event)"></ion-toggle>
+			</ion-item>
+			<ion-item>
+				<ion-label>Contrôle automatique du gain</ion-label>
+				<ion-toggle [checked]="autoGainControl" (ionChange)="onAutoGainControlChange($event)"></ion-toggle>
+			</ion-item>
+			<ion-note class="settings-note">
+				Ajuste automatiquement le volume pour des sons plus audibles.
+			</ion-note>
+
+			<ion-list-header class="settings-section-header">
 				<ion-label>Écran</ion-label>
 			</ion-list-header>
 			<ion-item>
@@ -90,13 +110,20 @@ import type { VuMeterSensitivity } from '../../core/models';
 })
 export class ReceiverSettingsPage {
 	private readonly preferences = inject(PreferencesService);
+	private readonly webrtc = inject(WebRTCService);
 
 	vuSensitivity: VuMeterSensitivity = 'medium';
 	keepScreenOn = false;
+	noiseCancellation = false;
+	echoCancellation = false;
+	autoGainControl = false;
 
 	constructor() {
 		this.vuSensitivity = this.preferences.getVuMeterSensitivity('receiver');
 		this.keepScreenOn = this.preferences.getKeepScreenOn();
+		this.noiseCancellation = this.preferences.getRemoteNoiseCancellation();
+		this.echoCancellation = this.preferences.getRemoteEchoCancellation();
+		this.autoGainControl = this.preferences.getRemoteAutoGainControl();
 	}
 
 	onSensitivityChange(event: CustomEvent): void {
@@ -109,5 +136,37 @@ export class ReceiverSettingsPage {
 		const enabled = event.detail.checked;
 		this.keepScreenOn = enabled;
 		this.preferences.setKeepScreenOn(enabled);
+	}
+
+	onNoiseCancellationChange(event: CustomEvent): void {
+		const enabled = event.detail.checked;
+		this.noiseCancellation = enabled;
+		this.preferences.setRemoteNoiseCancellation(enabled);
+		this.sendMicSettings();
+	}
+
+	onEchoCancellationChange(event: CustomEvent): void {
+		const enabled = event.detail.checked;
+		this.echoCancellation = enabled;
+		this.preferences.setRemoteEchoCancellation(enabled);
+		this.sendMicSettings();
+	}
+
+	onAutoGainControlChange(event: CustomEvent): void {
+		const enabled = event.detail.checked;
+		this.autoGainControl = enabled;
+		this.preferences.setRemoteAutoGainControl(enabled);
+		this.sendMicSettings();
+	}
+
+	private sendMicSettings(): void {
+		this.webrtc.sendDataChannelMessage({
+			type: 'micSettings',
+			payload: {
+				noiseCancellation: this.noiseCancellation,
+				echoCancellation: this.echoCancellation,
+				autoGainControl: this.autoGainControl,
+			},
+		});
 	}
 }

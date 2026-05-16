@@ -144,6 +144,20 @@ export class EmitterPage implements OnDestroy {
 				this.wakeLock.release();
 			}
 		});
+		// Listen for mic settings updates from receiver via data channel
+		effect(() => {
+			const msg = this.webrtc.lastDataChannelMessage();
+			if (msg?.type === 'micSettings' && msg.payload) {
+				const payload = msg.payload as { noiseCancellation: boolean; echoCancellation: boolean; autoGainControl: boolean };
+				this.noiseCancellation.set(payload.noiseCancellation);
+				this.echoCancellation.set(payload.echoCancellation);
+				this.autoGainControl.set(payload.autoGainControl);
+				this.preferences.setNoiseCancellation(payload.noiseCancellation);
+				this.preferences.setEchoCancellation(payload.echoCancellation);
+				this.preferences.setAutoGainControl(payload.autoGainControl);
+				void this.mic.applyConstraints(payload.noiseCancellation, payload.echoCancellation, payload.autoGainControl);
+			}
+		});
 		// Attempt quick reconnect on mount
 		void this.attemptQuickReconnect();
 	}

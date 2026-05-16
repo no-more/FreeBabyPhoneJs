@@ -11,6 +11,9 @@ const LS = {
 	ECHO_CANCELLATION: 'babyphone.echoCancellation',
 	AUTO_GAIN_CONTROL: 'babyphone.autoGainControl',
 	KEEP_SCREEN_ON: 'babyphone.keepScreenOn',
+	REMOTE_NOISE_CANCELLATION: 'babyphone.remoteNoiseCancellation',
+	REMOTE_ECHO_CANCELLATION: 'babyphone.remoteEchoCancellation',
+	REMOTE_AUTO_GAIN_CONTROL: 'babyphone.remoteAutoGainControl',
 } as const;
 
 @Injectable({ providedIn: 'root' })
@@ -81,6 +84,33 @@ export class PreferencesService {
 
 	setKeepScreenOn(enabled: boolean): void {
 		this.write(LS.KEEP_SCREEN_ON, String(enabled));
+	}
+
+	getRemoteNoiseCancellation(): boolean {
+		const raw = this.read(LS.REMOTE_NOISE_CANCELLATION);
+		return raw === 'true';
+	}
+
+	setRemoteNoiseCancellation(enabled: boolean): void {
+		this.write(LS.REMOTE_NOISE_CANCELLATION, String(enabled));
+	}
+
+	getRemoteEchoCancellation(): boolean {
+		const raw = this.read(LS.REMOTE_ECHO_CANCELLATION);
+		return raw === 'true';
+	}
+
+	setRemoteEchoCancellation(enabled: boolean): void {
+		this.write(LS.REMOTE_ECHO_CANCELLATION, String(enabled));
+	}
+
+	getRemoteAutoGainControl(): boolean {
+		const raw = this.read(LS.REMOTE_AUTO_GAIN_CONTROL);
+		return raw === 'true';
+	}
+
+	setRemoteAutoGainControl(enabled: boolean): void {
+		this.write(LS.REMOTE_AUTO_GAIN_CONTROL, String(enabled));
 	}
 
 	private read(key: string): string | null {
