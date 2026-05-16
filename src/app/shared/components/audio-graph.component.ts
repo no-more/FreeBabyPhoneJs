@@ -33,6 +33,12 @@ export class AudioGraphComponent {
 	private readonly audioHistory = signal<number[]>([]);
 	private readonly currentLevel = signal(0);
 
+	private readonly visibilityHandler = (): void => {
+		if (document.visibilityState === 'visible' && this.audioCtx?.state === 'suspended') {
+			void this.audioCtx.resume();
+		}
+	};
+
 	constructor() {
 		// Watch for stream changes
 		effect(() => {
@@ -44,9 +50,13 @@ export class AudioGraphComponent {
 			}
 		});
 
+		// Re-resume AudioContext when tab becomes visible (iOS suspends it)
+		document.addEventListener('visibilitychange', this.visibilityHandler);
+
 		// Cleanup on destroy
 		this.destroyRef.onDestroy(() => {
 			this.stopAnalyzing();
+			document.removeEventListener('visibilitychange', this.visibilityHandler);
 		});
 	}
 
@@ -55,6 +65,11 @@ export class AudioGraphComponent {
 
 		try {
 			this.audioCtx = new AudioContext();
+			// Browsers (especially mobile) start AudioContext suspended.
+			// Resume immediately so the analyser actually receives data.
+			if (this.audioCtx.state === 'suspended') {
+				await this.audioCtx.resume();
+			}
 			const source = this.audioCtx.createMediaStreamSource(stream);
 			this.analyser = this.audioCtx.createAnalyser();
 			this.analyser.fftSize = 256;
