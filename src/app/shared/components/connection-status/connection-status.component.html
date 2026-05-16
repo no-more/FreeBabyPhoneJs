@@ -78,6 +78,7 @@
 					aria-hidden="true"></ion-icon>
 				{{ formatBatteryPercent(batteryLevel()) }}
 			</span>
+			<span class="status-sublabel">{{ getBatteryStatusText(batteryLevel()) }}</span>
 		</div>
 		}
 

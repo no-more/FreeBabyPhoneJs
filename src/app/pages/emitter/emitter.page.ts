@@ -274,32 +274,47 @@ export class EmitterPage implements OnDestroy {
 			clearTimeout(this.quickReconnectTimeout);
 			this.quickReconnectTimeout = null;
 		}
+		if (this.batteryRef) {
+			this.batteryRef.removeEventListener('chargingchange', this.sendBatteryPayload);
+			this.batteryRef.removeEventListener('levelchange', this.sendBatteryPayload);
+			this.batteryRef = null;
+		}
 		if (this.batteryInterval) {
 			clearInterval(this.batteryInterval);
 			this.batteryInterval = null;
 		}
 	}
 
-	private startBatteryReporting(): void {
-		if (this.batteryInterval) return;
-		void this.sendBatteryUpdate();
-		this.batteryInterval = setInterval(() => {
-			void this.sendBatteryUpdate();
-		}, 30000);
-	}
+	private batteryRef: any = null;
 
-	private async sendBatteryUpdate(): Promise<void> {
+	private async startBatteryReporting(): Promise<void> {
+		if (this.batteryInterval) return;
 		if (!('getBattery' in navigator)) return;
+
 		try {
-			const battery = await (navigator as any).getBattery();
-			this.webrtc.sendDataChannelMessage({
-				type: 'battery',
-				payload: { level: battery.level, charging: battery.charging },
-			});
+			this.batteryRef = await (navigator as any).getBattery();
+			this.sendBatteryPayload();
+
+			// Immediate updates on state changes
+			this.batteryRef.addEventListener('chargingchange', this.sendBatteryPayload);
+			this.batteryRef.addEventListener('levelchange', this.sendBatteryPayload);
+
+			// Fallback heartbeat every 30s
+			this.batteryInterval = setInterval(() => {
+				this.sendBatteryPayload();
+			}, 30000);
 		} catch {
 			// Battery API unavailable or denied
 		}
 	}
+
+	private readonly sendBatteryPayload = (): void => {
+		if (!this.batteryRef) return;
+		this.webrtc.sendDataChannelMessage({
+			type: 'battery',
+			payload: { level: this.batteryRef.level, charging: this.batteryRef.charging },
+		});
+	};
 
 	private async attemptQuickReconnect(): Promise<void> {
 		const cached = this.quickReconnect.load();

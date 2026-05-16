@@ -264,5 +264,10 @@ export class ConnectionStatusComponent {
 		if (!battery) return '--';
 		return `${Math.round(battery.level * 100)} %`;
 	}
+
+	protected getBatteryStatusText(battery: { level: number; charging: boolean } | null): string {
+		if (!battery) return '';
+		return battery.charging ? 'En charge' : 'Sur batterie';
+	}
 }
 
