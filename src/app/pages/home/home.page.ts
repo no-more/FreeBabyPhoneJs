@@ -11,7 +11,9 @@ import {
 	IonButtons,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { downloadOutline, headsetOutline, micOutline, shareOutline } from 'ionicons/icons';
+import { downloadOutline, headsetOutline, micOutline, refreshOutline, shareOutline } from 'ionicons/icons';
+
+import { SwUpdate } from '@angular/service-worker';
 
 import { environment } from '../../../environments/environment';
 import { PreferencesService } from '../../core/storage/preferences.service';
@@ -37,12 +39,13 @@ export class HomePage {
 	private readonly router = inject(Router);
 	private readonly prefs = inject(PreferencesService);
 	private readonly modalCtrl = inject(ModalController);
+	protected readonly swUpdate = inject(SwUpdate, { optional: true });
 
 	protected readonly canInstall = signal(false);
 	private deferredPrompt: Event | null = null;
 
 	constructor() {
-		addIcons({ micOutline, headsetOutline, shareOutline, downloadOutline });
+		addIcons({ micOutline, headsetOutline, shareOutline, downloadOutline, refreshOutline });
 		this.setupInstallPrompt();
 	}
 
@@ -77,6 +80,11 @@ export class HomePage {
 	select(role: Role): void {
 		this.prefs.setRole(role);
 		void this.router.navigate([role === 'emitter' ? '/emitter' : '/receiver']);
+	}
+
+	async checkForUpdate(): Promise<void> {
+		if (!this.swUpdate?.isEnabled) return;
+		await this.swUpdate.checkForUpdate();
 	}
 
 	/** Reference to navigator for template access. */

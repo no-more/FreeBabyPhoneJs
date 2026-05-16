@@ -1,4 +1,4 @@
-import { Component, inject, Optional, OnDestroy } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { IonApp, IonRouterOutlet } from '@ionic/angular/standalone';
 import { SwUpdate } from '@angular/service-worker';
 import { AlertController } from '@ionic/angular/standalone';
@@ -8,10 +8,9 @@ import { AlertController } from '@ionic/angular/standalone';
 	templateUrl: 'app.component.html',
 	imports: [IonApp, IonRouterOutlet],
 })
-export class AppComponent implements OnDestroy {
+export class AppComponent {
 	private readonly alertCtrl = inject(AlertController);
 	private readonly swUpdate = inject(SwUpdate, { optional: true });
-	private updateCheckInterval: ReturnType<typeof setInterval> | null = null;
 
 	constructor() {
 		this.setupServiceWorkerUpdate();
@@ -31,17 +30,8 @@ export class AppComponent implements OnDestroy {
 			}
 		});
 
-		// Check for updates when the app becomes visible again
-		document.addEventListener('visibilitychange', () => {
-			if (document.visibilityState === 'visible') {
-				void this.swUpdate?.checkForUpdate();
-			}
-		});
-
-		// Periodic check every 2 minutes (120000ms) for new versions
-		this.updateCheckInterval = setInterval(() => {
-			void this.swUpdate?.checkForUpdate();
-		}, 120000);
+		// One-time check at startup
+		void this.swUpdate.checkForUpdate();
 	}
 
 	private async showUpdateAlert(): Promise<void> {
@@ -69,10 +59,4 @@ export class AppComponent implements OnDestroy {
 		await alert.present();
 	}
 
-	ngOnDestroy(): void {
-		if (this.updateCheckInterval) {
-			clearInterval(this.updateCheckInterval);
-			this.updateCheckInterval = null;
-		}
-	}
 }

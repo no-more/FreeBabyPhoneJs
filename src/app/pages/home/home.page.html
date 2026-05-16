@@ -52,6 +52,12 @@
 				Déployé&nbsp;: {{ versionInfo()!.deployDate }}
 			</p>
 			}
+			@if (swUpdate?.isEnabled) {
+			<ion-button fill="clear" size="small" (click)="checkForUpdate()">
+				<ion-icon slot="start" name="refresh-outline" aria-hidden="true"></ion-icon>
+				Vérifier les mises à jour
+			</ion-button>
+			}
 		</footer>
 	</div>
 </ion-content>
