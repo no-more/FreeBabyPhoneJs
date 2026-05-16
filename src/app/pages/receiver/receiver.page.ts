@@ -9,6 +9,7 @@ import {
 	inject,
 	signal,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import {
 	IonBackButton,
 	IonButton,
@@ -21,7 +22,6 @@ import {
 	IonTitle,
 	IonToolbar,
 	ToastController,
-	ModalController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
@@ -48,7 +48,6 @@ import { ConnectionStatusComponent } from '../../shared/components/connection-st
 import { WidgetSliderComponent } from '../../shared/components/widget-slider.component';
 import { SessionInfoComponent } from '../../shared/components/session-info.component';
 import { AudioGraphComponent } from '../../shared/components/audio-graph.component';
-import { SettingsModalComponent } from '../../shared/components/settings-modal/settings-modal.component';
 
 type Phase =
 	| 'idle'
@@ -81,7 +80,6 @@ type Phase =
 		WidgetSliderComponent,
 		SessionInfoComponent,
 		AudioGraphComponent,
-		SettingsModalComponent,
 	],
 	templateUrl: './receiver.page.html',
 	styleUrls: ['./receiver.page.scss'],
@@ -93,7 +91,7 @@ export class ReceiverPage implements OnDestroy {
 	private readonly quickReconnect = inject(QuickReconnectService);
 	private readonly toastController = inject(ToastController);
 	private readonly preferences = inject(PreferencesService);
-	private readonly modalCtrl = inject(ModalController);
+	private readonly router = inject(Router);
 
 	protected readonly phase = signal<Phase>('idle');
 	protected readonly errorMessage = signal<string | null>(null);
@@ -258,22 +256,8 @@ export class ReceiverPage implements OnDestroy {
 		audio.muted = newMutedState;
 	}
 
-	protected async openSettings(): Promise<void> {
-		const modal = await this.modalCtrl.create({
-			component: SettingsModalComponent,
-			componentProps: {
-				role: 'receiver',
-				sensitivity: this.vuSensitivity(),
-				keepScreenOn: this.keepScreenOn(),
-			},
-			backdropDismiss: true,
-			showBackdrop: true,
-		});
-		await modal.present();
-		await modal.onDidDismiss();
-		// Reload preferences in case they changed
-		this.vuSensitivity.set(this.preferences.getVuMeterSensitivity('receiver'));
-		this.keepScreenOn.set(this.preferences.getKeepScreenOn());
+	protected openSettings(): void {
+		void this.router.navigate(['/receiver/settings']);
 	}
 
 	private onRemoteTrack(event: RTCTrackEvent): void {

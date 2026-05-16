@@ -7,6 +7,7 @@ import {
 	inject,
 	signal,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import {
 	IonBackButton,
 	IonButton,
@@ -18,7 +19,6 @@ import {
 	IonSpinner,
 	IonTitle,
 	IonToolbar,
-	ModalController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { checkmarkCircle, micOffOutline, micOutline, qrCodeOutline, settingsOutline, stopCircleOutline } from 'ionicons/icons';
@@ -36,7 +36,6 @@ import { QrDisplayComponent } from '../../shared/components/qr-display/qr-displa
 import { QrScannerComponent } from '../../shared/components/qr-scanner/qr-scanner.component';
 import { VuMeterComponent } from '../../shared/components/vu-meter/vu-meter.component';
 import { ConnectionStatusComponent } from '../../shared/components/connection-status/connection-status.component';
-import { SettingsModalComponent } from '../../shared/components/settings-modal/settings-modal.component';
 
 type Phase =
 	| 'idle'
@@ -77,7 +76,7 @@ export class EmitterPage implements OnDestroy {
 	private readonly audioKeepalive = inject(AudioKeepaliveService);
 	private readonly quickReconnect = inject(QuickReconnectService);
 	private readonly preferences = inject(PreferencesService);
-	private readonly modalCtrl = inject(ModalController);
+	private readonly router = inject(Router);
 
 	protected readonly phase = signal<Phase>('idle');
 	protected readonly errorMessage = signal<string | null>(null);
@@ -204,28 +203,8 @@ export class EmitterPage implements OnDestroy {
 		this.phase.set('scanning-answer');
 	}
 
-	protected async openSettings(): Promise<void> {
-		const modal = await this.modalCtrl.create({
-			component: SettingsModalComponent,
-			componentProps: {
-				role: 'emitter',
-				sensitivity: this.vuSensitivity(),
-				noiseCancellation: this.noiseCancellation(),
-				echoCancellation: this.echoCancellation(),
-				autoGainControl: this.autoGainControl(),
-				keepScreenOn: this.keepScreenOn(),
-			},
-			backdropDismiss: true,
-			showBackdrop: true,
-		});
-		await modal.present();
-		await modal.onDidDismiss();
-		// Reload preferences in case they changed
-		this.vuSensitivity.set(this.preferences.getVuMeterSensitivity('emitter'));
-		this.noiseCancellation.set(this.preferences.getNoiseCancellation());
-		this.echoCancellation.set(this.preferences.getEchoCancellation());
-		this.autoGainControl.set(this.preferences.getAutoGainControl());
-		this.keepScreenOn.set(this.preferences.getKeepScreenOn());
+	protected openSettings(): void {
+		void this.router.navigate(['/emitter/settings']);
 	}
 
 	protected async onAnswerScanned(payload: string): Promise<void> {
