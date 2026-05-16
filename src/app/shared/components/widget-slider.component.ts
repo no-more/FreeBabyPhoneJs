@@ -1,14 +1,12 @@
 import {
 	ChangeDetectionStrategy,
 	Component,
-	ContentChildren,
 	ElementRef,
 	afterNextRender,
 	computed,
 	inject,
 	signal,
 } from '@angular/core';
-import { QueryList } from '@angular/core';
 
 @Component({
 	selector: 'app-widget-slider',
@@ -19,8 +17,6 @@ import { QueryList } from '@angular/core';
 })
 export class WidgetSliderComponent {
 	private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
-
-	@ContentChildren('widgetSlide') slides!: QueryList<ElementRef<HTMLElement>>;
 
 	protected readonly activeSlide = signal(0);
 	protected readonly translateX = signal(0);
@@ -40,7 +36,10 @@ export class WidgetSliderComponent {
 	}
 
 	private updateSlideCount(): void {
-		this.slideCount.set(this.slides.length);
+		const track = this.elementRef.nativeElement.querySelector('.widget-slider__track');
+		const count = track?.children.length ?? 0;
+		this.slideCount.set(count);
+		this.elementRef.nativeElement.style.setProperty('--slide-count', String(count));
 	}
 
 	private attachTouchListeners(): void {

@@ -10,8 +10,7 @@
 	<div class="widget-slider__container">
 		<div class="widget-slider__track"
 			[style.transform]="'translateX(' + (-activeSlide() * 100 + translateX() / 10) + '%)'"
-			[style.transition]="isDragging() ? 'none' : 'transform 0.3s ease-out'"
-			[style.width]="(slideCount() * 100) + '%'">
+			[style.transition]="isDragging() ? 'none' : 'transform 0.3s ease-out'">
 			<ng-content select="[widgetSlide]"></ng-content>
 		</div>
 	</div>

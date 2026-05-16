@@ -42,15 +42,10 @@
 	&__track {
 		display: flex;
 		will-change: transform;
-		width: fit-content;
 	}
 
 	::ng-deep [widgetSlide] {
-		flex: 1;
-		flex-shrink: 0;
-		flex-basis: 100%;
-		width: 100%;
-		min-width: 100%;
+		flex: 0 0 calc(100% / var(--slide-count, 1));
 		box-sizing: border-box;
 		padding: 0 4px;
 	}
