@@ -39,6 +39,7 @@ import { QrPartsAssembler, autoSplit } from '../../core/signaling/qr-parts';
 import { WakeLockService } from '../../core/media/wake-lock.service';
 import { decodeSdp, encodeSdp } from '../../core/signaling/sdp-codec';
 import { WebRTCService } from '../../core/webrtc/webrtc.service';
+import { ReconnectService } from '../../core/webrtc/reconnect.service';
 import { QuickReconnectService } from '../../core/storage/quick-reconnect.service';
 import { PreferencesService } from '../../core/storage/preferences.service';
 import type { VuMeterSensitivity } from '../../core/models';
@@ -88,6 +89,7 @@ export class ReceiverPage implements OnDestroy {
 	private readonly wakeLock = inject(WakeLockService);
 	private readonly audioKeepalive = inject(AudioKeepaliveService);
 	private readonly quickReconnect = inject(QuickReconnectService);
+	private readonly reconnect = inject(ReconnectService);
 	private readonly toastController = inject(ToastController);
 	private readonly preferences = inject(PreferencesService);
 	private readonly router = inject(Router);
@@ -107,11 +109,11 @@ export class ReceiverPage implements OnDestroy {
 	protected readonly keepScreenOn = signal(false);
 
 	protected readonly isFailed = computed(() => this.phase() === 'failed');
-	protected readonly isReconnecting = computed(() => this.webrtc.connectionState() === 'connecting');
+	protected readonly isReconnecting = computed(() => this.reconnect.status() === 'reconnecting');
 	protected readonly reconnectStatusSignal = computed(() => {
-		const state = this.webrtc.connectionState();
-		if (state === 'connecting') return 'Tentative de reconnexion...';
-		if (state === 'failed' || state === 'disconnected') return 'Échec de la connexion';
+		const status = this.reconnect.status();
+		if (status === 'reconnecting') return `Reconnexion ${this.reconnect.attempts()}/5…`;
+		if (status === 'gave-up') return 'Reconnexion échouée';
 		return null;
 	});
 
@@ -120,6 +122,14 @@ export class ReceiverPage implements OnDestroy {
 	// Getter for template access
 	protected get peerInstance(): RTCPeerConnection | null {
 		return this.webrtc.getPeerConnection();
+	}
+
+	protected get reconnectAttempts(): number {
+		return this.reconnect.attempts();
+	}
+
+	protected get reconnectLastDisconnectAt(): number | null {
+		return this.reconnect.lastDisconnectAt();
 	}
 
 	private quickReconnectTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -205,6 +215,7 @@ export class ReceiverPage implements OnDestroy {
 				await this.webrtc.createPeerConnection();
 				const peer = this.webrtc.getPeerConnection();
 				if (!peer) throw new Error('Impossible de créer la connexion peer.');
+				this.reconnect.attach(peer);
 
 				peer.addEventListener('track', (event) => this.onRemoteTrack(event));
 
@@ -359,6 +370,7 @@ export class ReceiverPage implements OnDestroy {
 		currentStream?.getTracks().forEach((t) => t.stop());
 		this.remoteStream.set(null);
 		this.webrtc.close();
+		this.reconnect.detach();
 		this.wakeLock.release();
 		this.audioKeepalive.stop();
 		this.emitterBattery.set(null);
@@ -391,6 +403,7 @@ export class ReceiverPage implements OnDestroy {
 			await this.webrtc.createPeerConnection();
 			const peer = this.webrtc.getPeerConnection();
 			if (!peer) throw new Error('Impossible de créer la connexion peer.');
+			this.reconnect.attach(peer);
 
 			peer.addEventListener('track', (event) => this.onRemoteTrack(event));
 

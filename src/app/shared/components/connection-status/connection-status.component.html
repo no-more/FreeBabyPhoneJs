@@ -115,6 +115,14 @@
 			<span class="status-value">{{ reconnectStatus() }}</span>
 		</div>
 		}
+
+		<!-- Last Disconnect Time -->
+		@if (lastDisconnectAt()) {
+		<div class="status-item">
+			<span class="status-label">Dernière déconnexion</span>
+			<span class="status-value">{{ formatTime(lastDisconnectAt()!) }}</span>
+		</div>
+		}
 	</div>
 
 	<!-- Data Transfer (only when connected) -->

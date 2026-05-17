@@ -29,6 +29,7 @@ import { WakeLockService } from '../../core/media/wake-lock.service';
 import { autoSplit } from '../../core/signaling/qr-parts';
 import { decodeSdp, encodeSdp } from '../../core/signaling/sdp-codec';
 import { WebRTCService } from '../../core/webrtc/webrtc.service';
+import { ReconnectService } from '../../core/webrtc/reconnect.service';
 import { QuickReconnectService } from '../../core/storage/quick-reconnect.service';
 import { PreferencesService } from '../../core/storage/preferences.service';
 import type { VuMeterSensitivity } from '../../core/models';
@@ -75,6 +76,7 @@ export class EmitterPage implements OnDestroy {
 	private readonly wakeLock = inject(WakeLockService);
 	private readonly audioKeepalive = inject(AudioKeepaliveService);
 	private readonly quickReconnect = inject(QuickReconnectService);
+	private readonly reconnect = inject(ReconnectService);
 	private readonly preferences = inject(PreferencesService);
 	private readonly router = inject(Router);
 
@@ -93,11 +95,11 @@ export class EmitterPage implements OnDestroy {
 	protected readonly isAwaitingAnswer = computed(() => this.phase() === 'awaiting-answer');
 	protected readonly isScanningAnswer = computed(() => this.phase() === 'scanning-answer');
 	protected readonly isFailed = computed(() => this.phase() === 'failed');
-	protected readonly isReconnecting = computed(() => this.webrtc.connectionState() === 'connecting');
+	protected readonly isReconnecting = computed(() => this.reconnect.status() === 'reconnecting');
 	protected readonly reconnectStatusSignal = computed(() => {
-		const state = this.webrtc.connectionState();
-		if (state === 'connecting') return 'Tentative de reconnexion...';
-		if (state === 'failed' || state === 'disconnected') return 'Échec de la connexion';
+		const status = this.reconnect.status();
+		if (status === 'reconnecting') return `Reconnexion ${this.reconnect.attempts()}/5…`;
+		if (status === 'gave-up') return 'Reconnexion échouée';
 		return null;
 	});
 
@@ -107,6 +109,14 @@ export class EmitterPage implements OnDestroy {
 	// Getter for template access
 	protected get peerInstance(): RTCPeerConnection | null {
 		return this.webrtc.getPeerConnection();
+	}
+
+	protected get reconnectAttempts(): number {
+		return this.reconnect.attempts();
+	}
+
+	protected get reconnectLastDisconnectAt(): number | null {
+		return this.reconnect.lastDisconnectAt();
 	}
 
 	constructor() {
@@ -176,6 +186,7 @@ export class EmitterPage implements OnDestroy {
 			await this.webrtc.createPeerConnection();
 			const peer = this.webrtc.getPeerConnection();
 			if (!peer) throw new Error('Impossible de créer la connexion peer.');
+			this.reconnect.attach(peer);
 
 			this.webrtc.createDataChannel('status');
 
@@ -286,6 +297,7 @@ export class EmitterPage implements OnDestroy {
 		const peer = this.webrtc.getPeerConnection();
 		peer?.getSenders().forEach((s) => s.track?.stop());
 		this.webrtc.close();
+		this.reconnect.detach();
 		this.mic.release();
 		this.wakeLock.release();
 		this.audioKeepalive.stop();
@@ -400,6 +412,7 @@ export class EmitterPage implements OnDestroy {
 			// Watch for connection or failure
 			const peer = this.webrtc.getPeerConnection();
 			if (peer) {
+				this.reconnect.attach(peer);
 				this.watchForConnected(peer);
 			}
 		} catch {

@@ -73,7 +73,8 @@
 			<p>Le récepteur reçoit le son. Gardez cet appareil allumé près du bébé.</p>
 		</div>
 		<app-connection-status [peer]="peerInstance" role="emitter" [localStream]="localStream()" [isMuted]="isMuted()"
-			[reconnectStatus]="reconnectStatusSignal()">
+			[reconnectStatus]="reconnectStatusSignal()" [reconnectAttempts]="reconnectAttempts"
+			[lastDisconnectAt]="reconnectLastDisconnectAt">
 		</app-connection-status>
 		<app-vu-meter [stream]="localStream()" [sensitivity]="vuSensitivity()"></app-vu-meter>
 		<ion-button expand="block" [color]="isMuted() ? 'medium' : 'primary'" (click)="toggleMute()">

@@ -65,7 +65,8 @@
 			<div widgetSlide>
 				<app-connection-status [peer]="peerInstance" role="receiver" [remoteStream]="remoteStream()"
 					[isMuted]="isMuted()" [reconnectStatus]="reconnectStatusSignal()" [batteryLevel]="emitterBattery()"
-					[networkInfo]="emitterNetwork()" [isEmitterMuted]="isEmitterMuted()">
+					[networkInfo]="emitterNetwork()" [isEmitterMuted]="isEmitterMuted()"
+					[reconnectAttempts]="reconnectAttempts" [lastDisconnectAt]="reconnectLastDisconnectAt">
 				</app-connection-status>
 			</div>
 			<div widgetSlide>

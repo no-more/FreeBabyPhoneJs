@@ -51,6 +51,8 @@ export class ConnectionStatusComponent {
 	batteryLevel = input<{ level: number; charging: boolean } | null>(null);
 	networkInfo = input<{ effectiveType: string; downlink: number | null; rtt: number | null } | null>(null);
 	isEmitterMuted = input<boolean>(false);
+	reconnectAttempts = input<number>(0);
+	lastDisconnectAt = input<number | null>(null);
 
 	@Output() qualityChange = new EventEmitter<ConnectionQuality>();
 
@@ -255,6 +257,14 @@ export class ConnectionStatusComponent {
 		const mins = Math.floor(seconds / 60);
 		const secs = seconds % 60;
 		return `${mins}:${secs.toString().padStart(2, '0')}`;
+	}
+
+	protected formatTime(timestamp: number): string {
+		return new Date(timestamp).toLocaleTimeString('fr-FR', {
+			hour: '2-digit',
+			minute: '2-digit',
+			second: '2-digit',
+		});
 	}
 
 	protected getBatteryIcon(battery: { level: number; charging: boolean } | null): string {
