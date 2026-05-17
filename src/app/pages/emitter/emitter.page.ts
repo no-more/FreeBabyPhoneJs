@@ -214,6 +214,11 @@ export class EmitterPage implements OnDestroy {
 		stream.getAudioTracks().forEach((track) => {
 			track.enabled = !newMutedState;
 		});
+		// Notify receiver via data channel (fallback for browsers where track mute events are unreliable)
+		this.webrtc.sendDataChannelMessage({
+			type: 'micMute',
+			payload: { muted: newMutedState },
+		});
 	}
 
 	protected startAnswerScan(): void {

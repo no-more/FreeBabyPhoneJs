@@ -69,6 +69,16 @@
 		</div>
 		}
 
+		<!-- Emitter Mute Status (receiver only) -->
+		@if (role() === 'receiver') {
+		<div class="status-item">
+			<span class="status-label">Micro émetteur</span>
+			<span class="status-badge" [attr.data-muted]="isEmitterMuted()">
+				{{ isEmitterMuted() ? 'Coupé' : 'Actif' }}
+			</span>
+		</div>
+		}
+
 		<!-- Emitter Battery -->
 		@if (role() === 'receiver') {
 		<div class="status-item">

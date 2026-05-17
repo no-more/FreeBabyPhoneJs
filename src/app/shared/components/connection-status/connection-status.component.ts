@@ -50,6 +50,7 @@ export class ConnectionStatusComponent {
 	reconnectStatus = input<string | null>(null);
 	batteryLevel = input<{ level: number; charging: boolean } | null>(null);
 	networkInfo = input<{ effectiveType: string; downlink: number | null; rtt: number | null } | null>(null);
+	isEmitterMuted = input<boolean>(false);
 
 	@Output() qualityChange = new EventEmitter<ConnectionQuality>();
 

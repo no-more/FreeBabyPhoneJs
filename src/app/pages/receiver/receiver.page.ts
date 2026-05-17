@@ -26,6 +26,7 @@ import {
 import { addIcons } from 'ionicons';
 import {
 	checkmarkCircle,
+	micOffOutline,
 	qrCodeOutline,
 	settingsOutline,
 	stopCircleOutline,
@@ -125,7 +126,7 @@ export class ReceiverPage implements OnDestroy {
 	private readonly qrAssembler = new QrPartsAssembler();
 
 	constructor() {
-		addIcons({ checkmarkCircle, qrCodeOutline, settingsOutline, stopCircleOutline, volumeHighOutline, volumeMuteOutline });
+		addIcons({ checkmarkCircle, micOffOutline, qrCodeOutline, settingsOutline, stopCircleOutline, volumeHighOutline, volumeMuteOutline });
 		// Load VU meter sensitivity from preferences
 		this.vuSensitivity.set(this.preferences.getVuMeterSensitivity('receiver'));
 		// Load keep screen on from preferences
@@ -167,6 +168,13 @@ export class ReceiverPage implements OnDestroy {
 			const msg = this.webrtc.lastDataChannelMessage();
 			if (msg?.type === 'network' && msg.payload) {
 				this.emitterNetwork.set(msg.payload as { effectiveType: string; downlink: number | null; rtt: number | null });
+			}
+		});
+		// Listen for mic mute updates from emitter via data channel (fallback for unreliable track events)
+		effect(() => {
+			const msg = this.webrtc.lastDataChannelMessage();
+			if (msg?.type === 'micMute' && msg.payload) {
+				this.isEmitterMuted.set((msg.payload as { muted: boolean }).muted);
 			}
 		});
 		// Attempt quick reconnect on mount
