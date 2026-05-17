@@ -25,7 +25,10 @@ export class WidgetSliderComponent {
 	protected readonly slideIndices = computed(() => Array.from({ length: this.slideCount() }, (_, i) => i));
 
 	private startX = 0;
+	private startY = 0;
 	private currentX = 0;
+	private currentY = 0;
+	private isHorizontalDrag = false;
 	private readonly swipeThreshold = 50;
 
 	constructor() {
@@ -57,16 +60,37 @@ export class WidgetSliderComponent {
 
 	private onTouchStart(e: TouchEvent | MouseEvent): void {
 		this.isDragging.set(true);
+		this.isHorizontalDrag = false;
 		this.startX = this.getClientX(e);
+		this.startY = this.getClientY(e);
 		this.currentX = this.startX;
+		this.currentY = this.startY;
 	}
 
 	private onTouchMove(e: TouchEvent | MouseEvent): void {
 		if (!this.isDragging()) return;
-		e.preventDefault();
 		this.currentX = this.getClientX(e);
-		const diff = this.currentX - this.startX;
-		this.translateX.set(diff);
+		this.currentY = this.getClientY(e);
+		const diffX = this.currentX - this.startX;
+		const diffY = this.currentY - this.startY;
+
+		// If direction not yet determined, decide based on first meaningful movement
+		if (!this.isHorizontalDrag && Math.abs(diffX) < 10 && Math.abs(diffY) < 10) {
+			return; // Wait for more movement
+		}
+
+		if (!this.isHorizontalDrag) {
+			// Determine primary direction
+			if (Math.abs(diffY) > Math.abs(diffX)) {
+				// Vertical scroll — abort slider drag and let page scroll
+				this.isDragging.set(false);
+				return;
+			}
+			this.isHorizontalDrag = true;
+		}
+
+		e.preventDefault();
+		this.translateX.set(diffX);
 	}
 
 	private onTouchEnd(e: TouchEvent | MouseEvent): void {
@@ -90,6 +114,10 @@ export class WidgetSliderComponent {
 
 	private getClientX(e: TouchEvent | MouseEvent): number {
 		return 'touches' in e ? e.touches[0].clientX : e.clientX;
+	}
+
+	private getClientY(e: TouchEvent | MouseEvent): number {
+		return 'touches' in e ? e.touches[0].clientY : e.clientY;
 	}
 
 	protected goToSlide(index: number): void {
