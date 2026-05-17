@@ -101,6 +101,7 @@ export class ReceiverPage implements OnDestroy {
 	protected readonly isEmitterMuted = signal(false);
 	protected readonly connectionStartTime = signal<number | null>(null);
 	protected readonly emitterBattery = signal<{ level: number; charging: boolean } | null>(null);
+	protected readonly emitterNetwork = signal<{ effectiveType: string; downlink: number | null; rtt: number | null } | null>(null);
 	protected readonly vuSensitivity = signal<VuMeterSensitivity>('medium');
 	protected readonly keepScreenOn = signal(false);
 
@@ -119,6 +120,7 @@ export class ReceiverPage implements OnDestroy {
 	protected get peerInstance(): RTCPeerConnection | null {
 		return this.webrtc.getPeerConnection();
 	}
+
 	private quickReconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 	private readonly qrAssembler = new QrPartsAssembler();
 
@@ -158,6 +160,13 @@ export class ReceiverPage implements OnDestroy {
 			const msg = this.webrtc.lastDataChannelMessage();
 			if (msg?.type === 'battery' && msg.payload) {
 				this.emitterBattery.set(msg.payload as { level: number; charging: boolean });
+			}
+		});
+		// Listen for network updates from emitter via data channel
+		effect(() => {
+			const msg = this.webrtc.lastDataChannelMessage();
+			if (msg?.type === 'network' && msg.payload) {
+				this.emitterNetwork.set(msg.payload as { effectiveType: string; downlink: number | null; rtt: number | null });
 			}
 		});
 		// Attempt quick reconnect on mount
@@ -345,6 +354,7 @@ export class ReceiverPage implements OnDestroy {
 		this.wakeLock.release();
 		this.audioKeepalive.stop();
 		this.emitterBattery.set(null);
+		this.emitterNetwork.set(null);
 		if (this.quickReconnectTimeout) {
 			clearTimeout(this.quickReconnectTimeout);
 			this.quickReconnectTimeout = null;

@@ -2,6 +2,8 @@ import {
 	ChangeDetectionStrategy,
 	Component,
 	DestroyRef,
+	EventEmitter,
+	Output,
 	effect,
 	inject,
 	input,
@@ -13,7 +15,7 @@ import { IonIcon } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { batteryChargingOutline, batteryDeadOutline, batteryFullOutline, batteryHalfOutline, pulseOutline } from 'ionicons/icons';
 
-type ConnectionQuality = 'excellent' | 'good' | 'fair' | 'poor' | 'unknown';
+export type ConnectionQuality = 'excellent' | 'good' | 'fair' | 'poor' | 'unknown';
 
 interface StatusState {
 	connectionState: string;
@@ -47,6 +49,9 @@ export class ConnectionStatusComponent {
 	isMuted = input<boolean>(false);
 	reconnectStatus = input<string | null>(null);
 	batteryLevel = input<{ level: number; charging: boolean } | null>(null);
+	networkInfo = input<{ effectiveType: string; downlink: number | null; rtt: number | null } | null>(null);
+
+	@Output() qualityChange = new EventEmitter<ConnectionQuality>();
 
 	protected readonly status = signal<StatusState>({
 		connectionState: 'new',
@@ -144,6 +149,10 @@ export class ConnectionStatusComponent {
 			const now = Date.now();
 			this.statsHistory.push({ timestamp: now, bytesReceived, bytesSent });
 			if (this.statsHistory.length > 10) this.statsHistory.shift();
+
+			if (quality !== this.status().quality) {
+				this.qualityChange.emit(quality);
+			}
 
 			this.status.update((s) => ({
 				...s,

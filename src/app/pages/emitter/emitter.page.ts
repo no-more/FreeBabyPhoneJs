@@ -252,6 +252,7 @@ export class EmitterPage implements OnDestroy {
 				this.phase.set('connected');
 				void this.wakeLock.acquire();
 				this.startBatteryReporting();
+				this.startNetworkReporting();
 				// Save for quick reconnect on next launch
 				const cached = this.quickReconnect.load();
 				if (!cached) {
@@ -297,9 +298,49 @@ export class EmitterPage implements OnDestroy {
 			clearInterval(this.batteryInterval);
 			this.batteryInterval = null;
 		}
+		if (this.networkInterval) {
+			if ('connection' in navigator) {
+				(navigator as any).connection?.removeEventListener('change', this.sendNetworkPayload);
+			}
+			clearInterval(this.networkInterval);
+			this.networkInterval = null;
+		}
 	}
 
 	private batteryRef: any = null;
+	private networkInterval: ReturnType<typeof setInterval> | null = null;
+
+	private async startNetworkReporting(): Promise<void> {
+		if (this.networkInterval) return;
+		if (!('connection' in navigator)) return;
+		const conn = (navigator as any).connection;
+		if (!conn) return;
+
+		this.sendNetworkPayload();
+
+		// Listen for network changes
+		conn.addEventListener('change', this.sendNetworkPayload);
+
+		// Fallback heartbeat every 30s
+		this.networkInterval = setInterval(() => {
+			this.sendNetworkPayload();
+		}, 30000);
+	}
+
+	private readonly sendNetworkPayload = (): void => {
+		if (!('connection' in navigator)) return;
+		const conn = (navigator as any).connection;
+		if (!conn) return;
+		this.webrtc.sendDataChannelMessage({
+			type: 'network',
+			payload: {
+				effectiveType: conn.effectiveType ?? 'unknown',
+				downlink: conn.downlink ?? null,
+				rtt: conn.rtt ?? null,
+				saveData: conn.saveData ?? false,
+			},
+		});
+	};
 
 	private async startBatteryReporting(): Promise<void> {
 		if (this.batteryInterval) return;

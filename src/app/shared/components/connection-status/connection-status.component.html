@@ -82,6 +82,22 @@
 		</div>
 		}
 
+		<!-- Emitter Network -->
+		@if (role() === 'receiver' && networkInfo()) {
+		<div class="status-item">
+			<span class="status-label">Réseau émetteur</span>
+			<span class="status-value">
+				{{ networkInfo()?.effectiveType?.toUpperCase() }}
+				@if (networkInfo()?.downlink) {
+				· {{ networkInfo()?.downlink }} Mbps
+				}
+			</span>
+			@if (networkInfo()?.rtt) {
+			<span class="status-sublabel">Latence estimée : {{ networkInfo()?.rtt }} ms</span>
+			}
+		</div>
+		}
+
 		<!-- Reconnect Status -->
 		@if (reconnectStatus()) {
 		<div class="status-item status-item--warning">
